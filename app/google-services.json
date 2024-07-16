@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "33179655809",
+    "project_id": "stockmobile-668c9",
+    "storage_bucket": "stockmobile-668c9.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:33179655809:android:21e712b4b02a676f027780",
+        "android_client_info": {
+          "package_name": "com.bielcode.stockmobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCorI42hfNfD8osYsLjOJHea0etyzInffo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
