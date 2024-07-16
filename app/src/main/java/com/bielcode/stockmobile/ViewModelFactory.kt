@@ -17,10 +17,9 @@ import com.bielcode.stockmobile.ui.screens.stock.detail.StockDetailViewModel
 import com.bielcode.stockmobile.ui.screens.stock.entry.StockEntryViewModel
 import com.bielcode.stockmobile.ui.screens.transaction.TransactionDetail.TransactionDetailViewModel
 import com.bielcode.stockmobile.ui.screens.transaction.TransactionViewModel
-import com.bielcode.stockmobile.ui.screens.transaction.gudang.TransactionDeliveryConfirm.TransactionDeliveryConfirmScreenPreview
 import com.bielcode.stockmobile.ui.screens.transaction.gudang.TransactionDeliveryConfirm.TransactionDeliveryConfirmViewModel
-import com.bielcode.stockmobile.ui.screens.transaction.marketing.SearchAddProduct.SearchAddProductViewModel
-import com.bielcode.stockmobile.ui.screens.transaction.marketing.TransactionEntry.TransactionEntryViewModel
+import com.bielcode.stockmobile.ui.screens.transaction.marketing.searchaddproduct.SearchAddProductViewModel
+import com.bielcode.stockmobile.ui.screens.transaction.marketing.transactionentry.TransactionEntryViewModel
 import com.bielcode.stockmobile.ui.screens.utility.barcodescanner.ScannerViewModel
 import com.bielcode.stockmobile.ui.screens.utility.barcodescanner.StockInputViewModel
 import com.bielcode.stockmobile.ui.screens.utility.camera.CameraViewModel

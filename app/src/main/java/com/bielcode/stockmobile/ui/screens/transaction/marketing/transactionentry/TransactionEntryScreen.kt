@@ -1,6 +1,6 @@
 @file:OptIn(ExperimentalLayoutApi::class)
 
-package com.bielcode.stockmobile.ui.screens.transaction.marketing.TransactionEntry
+package com.bielcode.stockmobile.ui.screens.transaction.marketing.transactionentry
 
 import android.widget.Toast
 import androidx.compose.foundation.horizontalScroll

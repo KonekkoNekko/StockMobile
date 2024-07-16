@@ -23,7 +23,7 @@ import com.bielcode.stockmobile.ui.screens.partner.detail.PartnerDetailScreen
 import com.bielcode.stockmobile.ui.screens.partner.entry.PartnerEntryScreen
 import com.bielcode.stockmobile.ui.screens.stock.detail.StockDetailScreen
 import com.bielcode.stockmobile.ui.screens.stock.entry.StockEntryScreen
-import com.bielcode.stockmobile.ui.screens.transaction.marketing.TransactionEntry.TransactionEntryScreen
+import com.bielcode.stockmobile.ui.screens.transaction.marketing.transactionentry.TransactionEntryScreen
 import com.bielcode.stockmobile.ui.screens.utility.barcodescanner.BarcodeScannerScreen
 import com.bielcode.stockmobile.ui.screens.utility.barcodescanner.StockInputScreen
 import com.bielcode.stockmobile.ui.screens.utility.camera.CameraScreen

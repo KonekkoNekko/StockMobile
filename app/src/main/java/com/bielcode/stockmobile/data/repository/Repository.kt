@@ -14,6 +14,7 @@ import com.bielcode.stockmobile.data.preferences.UserPreference
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.GeoPoint
 import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.tasks.await
@@ -381,6 +382,50 @@ class Repository private constructor(
     }
 
     fun getLocation(): Flow<Pair<String, String>> = userPreference.getLocation()
+
+    suspend fun getTransactions(): List<Transaction> {
+        return try {
+            val snapshot = firestore.collection("transactions").get().await()
+            snapshot.documents.mapNotNull { document -> document.toTransaction() }
+        } catch (e: Exception) {
+            Log.e("Repository", "Error fetching transactions", e)
+            emptyList()
+        }
+    }
+
+    private fun DocumentSnapshot.toTransaction(): Transaction? {
+        return try {
+            val transactionItemsMap = this.get("transactionItems") as? Map<String, Map<String, Any>>
+            val transactionItems = transactionItemsMap?.mapValues { (_, itemMap) ->
+                TransactionItem(
+                    isChecked = itemMap["isChecked"] as? Boolean ?: false,
+                    itemCatalog = itemMap["itemCatalog"] as? String ?: "",
+                    itemName = itemMap["itemName"] as? String ?: "",
+                    itemQty = (itemMap["itemQty"] as? Long)?.toInt() ?: 0,
+                    itemSize = itemMap["itemSize"] as? String ?: ""
+                )
+            } ?: emptyMap()
+
+            Transaction(
+                transactionCode = this.getString("transactionCode") ?: "",
+                transactionAddress = this.getString("transactionAddress") ?: "",
+                transactionContact = this.get("transactionContact") as? Map<String, Any> ?: emptyMap(),
+                transactionCoordination = this.getGeoPoint("transactionCoordination") ?: GeoPoint(0.0, 0.0),
+                transactionDate = this.getTimestamp("transactionDate")?.toDate(),
+                transactionDestination = this.getString("transactionDestination") ?: "",
+                transactionDocumentUrl = this.getString("transactionDocumentUrl") ?: "",
+                transactionDocumentationUrl = this.getString("transactionDocumentationUrl") ?: "",
+                transactionItems = transactionItems,
+                transactionPhone = this.getString("transactionPhone") ?: "",
+                transactionType = this.getString("transactionType") ?: ""
+            )
+        } catch (e: Exception) {
+            Log.e("Repository", "Error mapping Transaction", e)
+            null
+        }
+    }
+
+
 
     companion object {
         private const val TAG = "Repository"

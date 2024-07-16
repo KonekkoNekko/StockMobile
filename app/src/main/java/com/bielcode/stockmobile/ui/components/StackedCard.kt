@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat.startActivity
 import coil.compose.rememberImagePainter
+import com.bielcode.stockmobile.ui.theme.Purple6750A4
 import com.bielcode.stockmobile.ui.theme.WhiteFEF7FF
 
 
@@ -308,7 +309,7 @@ fun TransactionStackedCard(
                 ) {
                     SmallFloatingActionButton(
                         onClick = {}, modifier = Modifier,
-                        containerColor = Color.Blue, shape = CircleShape
+                        containerColor = Purple6750A4, shape = CircleShape
                     ) {
                         Icon(
                             imageVector = Icons.Default.Business,
@@ -336,7 +337,6 @@ fun TransactionStackedCard(
                 ) {
                     Text(text = "Kuantitas", style = MaterialTheme.typography.labelSmall)
                     Text(text = qty.toString(), style = MaterialTheme.typography.bodyMedium)
-
                 }
             }
         }

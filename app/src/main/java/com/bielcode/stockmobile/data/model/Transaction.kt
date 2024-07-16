@@ -1,11 +1,14 @@
 package com.bielcode.stockmobile.data.model
 
+import com.google.firebase.firestore.GeoPoint
+import java.util.Date
+
 data class Transaction(
-    val transactionAddress: String = "",
     val transactionCode: String = "",
-    val transactionContact: Map<String, String> = emptyMap(),
-    val transactionCoordination: String = "",
-    val transactionDate: String = "",
+    val transactionAddress: String = "",
+    val transactionContact: Map<String, Any> = emptyMap(),
+    val transactionCoordination: GeoPoint = GeoPoint(0.0, 0.0),
+    val transactionDate: Date? = null,
     val transactionDestination: String = "",
     val transactionDocumentUrl: String = "",
     val transactionDocumentationUrl: String = "",
@@ -21,4 +24,3 @@ data class TransactionItem(
     val itemQty: Int = 0,
     val itemSize: String = ""
 )
-

@@ -1,4 +1,4 @@
-package com.bielcode.stockmobile.ui.screens.transaction.marketing.SearchAddProduct
+package com.bielcode.stockmobile.ui.screens.transaction.marketing.searchaddproduct
 
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
