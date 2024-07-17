@@ -15,7 +15,7 @@ import com.bielcode.stockmobile.ui.screens.partner.PartnerViewModel
 import com.bielcode.stockmobile.ui.screens.stock.StockViewModel
 import com.bielcode.stockmobile.ui.screens.stock.detail.StockDetailViewModel
 import com.bielcode.stockmobile.ui.screens.stock.entry.StockEntryViewModel
-import com.bielcode.stockmobile.ui.screens.transaction.TransactionDetail.TransactionDetailViewModel
+import com.bielcode.stockmobile.ui.screens.transaction.transactiondetail.TransactionDetailViewModel
 import com.bielcode.stockmobile.ui.screens.transaction.TransactionViewModel
 import com.bielcode.stockmobile.ui.screens.transaction.gudang.TransactionDeliveryConfirm.TransactionDeliveryConfirmViewModel
 import com.bielcode.stockmobile.ui.screens.transaction.marketing.searchaddproduct.SearchAddProductViewModel
@@ -24,7 +24,6 @@ import com.bielcode.stockmobile.ui.screens.utility.barcodescanner.ScannerViewMod
 import com.bielcode.stockmobile.ui.screens.utility.barcodescanner.StockInputViewModel
 import com.bielcode.stockmobile.ui.screens.utility.barcodescanner.TransactionStockInputViewModel
 import com.bielcode.stockmobile.ui.screens.utility.camera.CameraViewModel
-import com.bielcode.stockmobile.ui.screens.utility.documentscanner.DocumentScannerScreen
 import com.bielcode.stockmobile.ui.screens.utility.documentscanner.DocumentScannerViewModel
 import com.bielcode.stockmobile.ui.screens.utility.mapspicker.MapsPickerViewModel
 

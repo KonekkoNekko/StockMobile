@@ -267,7 +267,8 @@ fun TransactionStackedCard(
     status: String,
     name: String,
     address: String,
-    qty: Int
+    qty: Int,
+    onClick: () -> Unit
 ) {
     Card(
         colors = CardDefaults.cardColors(
@@ -276,7 +277,8 @@ fun TransactionStackedCard(
         shape = ShapeDefaults.Small,
         modifier = Modifier
             .size(width = 300.dp, height = 250.dp),
-        border = BorderStroke(1.dp, Color.Cyan)
+        border = BorderStroke(1.dp, Color.Cyan),
+        onClick = onClick
     ) {
         Column(
             modifier = Modifier.padding(16.dp)
@@ -384,7 +386,8 @@ fun PreviewTransactionStackedCard() {
             status = "Siap Diantar",
             name = "PT. Sumber Bahagia",
             address = "Jl. Raya Darmo 31-133 Surabaya 60241",
-            qty = 30
+            qty = 30,
+            onClick = {}
         )
     }
 }

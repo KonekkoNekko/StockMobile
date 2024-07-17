@@ -34,12 +34,23 @@ fun TransactionScreen(
         viewModel(factory = ViewModelFactory(Injection.provideRepository(context)))
     val correctRole by transactionViewModel.isCorrectRole.collectAsState()
     val transactionList by transactionViewModel.transactionList.collectAsState()
+    val isLoading by transactionViewModel.isLoading.collectAsState()
 
     var selectedFilter by remember { mutableStateOf("All") }
     val filteredTransactions = when (selectedFilter) {
         "Penjualan" -> transactionViewModel.filterByType("Penjualan")
         "Konsinyasi" -> transactionViewModel.filterByType("Konsinyasi")
         else -> transactionList
+    }
+
+    LaunchedEffect(navController.currentBackStackEntry) {
+        navController.currentBackStackEntry?.savedStateHandle?.getLiveData<Boolean>("shouldRefetch")
+            ?.observe(navController.currentBackStackEntry!!) { shouldRefetch ->
+                if (shouldRefetch) {
+                    transactionViewModel.fetchTransactions()
+                    navController.currentBackStackEntry?.savedStateHandle?.remove<Boolean>("shouldRefetch")
+                }
+            }
     }
 
     Scaffold(modifier = Modifier,
@@ -94,20 +105,31 @@ fun TransactionScreen(
                         onClick = { selectedFilter = "All" },
                         label = { Text(text = "Semua Transaksi") })
                 }
-                LazyColumn(
-                    modifier = Modifier.padding(top = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    items(filteredTransactions) { transaction ->
-                        val status = transactionViewModel.getStatus(transaction)
-                        TransactionStackedCard(
-                            type = transaction.transactionType,
-                            code = transaction.transactionCode,
-                            status = status,
-                            name = transaction.transactionDestination,
-                            address = transaction.transactionAddress,
-                            qty = transaction.transactionItems.values.sumOf { it.itemQty }
-                        )
+                if (isLoading) {
+                    CircularProgressIndicator(modifier = Modifier.padding(top = 16.dp))
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.padding(top = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        items(filteredTransactions) { transaction ->
+                            val status = transactionViewModel.getStatus(transaction)
+                            TransactionStackedCard(
+                                type = transaction.transactionType,
+                                code = transaction.transactionCode,
+                                status = status,
+                                name = transaction.transactionDestination,
+                                address = transaction.transactionAddress,
+                                qty = transaction.transactionItems.values.sumOf { it.itemQty },
+                                onClick = {
+                                    if (correctRole) {
+                                        navController.navigate("${Screen.TransactionDetail.route}/${transaction.transactionCode}")
+                                    } else {
+                                        navController.navigate("${Screen.TransactionDetail_Delivery.route}/${transaction.transactionCode}")
+                                    }
+                                }
+                            )
+                        }
                     }
                 }
             }

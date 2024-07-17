@@ -15,6 +15,9 @@ class TransactionViewModel(private val repository: Repository): ViewModel() {
     private val _transactionList = MutableStateFlow<List<Transaction>>(emptyList())
     val transactionList: StateFlow<List<Transaction>> = _transactionList
 
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading
+
     init {
         getCurrentRole()
         fetchTransactions()
@@ -28,10 +31,12 @@ class TransactionViewModel(private val repository: Repository): ViewModel() {
         }
     }
 
-    private fun fetchTransactions() {
+    fun fetchTransactions() {
         viewModelScope.launch {
             val transactions = repository.getTransactions()
+            _isLoading.value = true
             _transactionList.value = transactions.filter { it.transactionType != "Masuk" }
+            _isLoading.value = false
         }
     }
 

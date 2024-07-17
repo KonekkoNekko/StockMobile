@@ -1,6 +1,10 @@
+@file:OptIn(ExperimentalMaterial3Api::class)
+
 package com.bielcode.stockmobile.ui.screens.utility.documentscanner
 
 import android.app.Activity
+import android.content.Context
+import android.net.Uri
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.IntentSenderRequest
@@ -18,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
@@ -26,12 +31,14 @@ import com.bielcode.stockmobile.data.injection.Injection
 import com.google.mlkit.vision.documentscanner.GmsDocumentScannerOptions
 import com.google.mlkit.vision.documentscanner.GmsDocumentScanning
 import com.google.mlkit.vision.documentscanner.GmsDocumentScanningResult
+import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DocumentScannerScreen(
     navController: NavController,
     transactionCode: String,
+    isForRead: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -43,7 +50,11 @@ fun DocumentScannerScreen(
 
     // Clear the URIs on first load
     LaunchedEffect(Unit) {
-        documentScannerViewModel._imageUris.value = emptyList() // Ensure it's empty on first load
+        if (isForRead){
+            documentScannerViewModel.loadDocumentUris(context, transactionCode)
+        } else {
+            documentScannerViewModel._imageUris.value = emptyList() // Ensure it's empty on first load
+        }
     }
 
     val imageUris by documentScannerViewModel.imageUris.collectAsState()
@@ -54,7 +65,6 @@ fun DocumentScannerScreen(
     val options = GmsDocumentScannerOptions.Builder()
         .setScannerMode(GmsDocumentScannerOptions.SCANNER_MODE_FULL)
         .setGalleryImportAllowed(true)
-        .setPageLimit(5)
         .setResultFormats(
             GmsDocumentScannerOptions.RESULT_FORMAT_JPEG,
             GmsDocumentScannerOptions.RESULT_FORMAT_PDF
@@ -83,7 +93,11 @@ fun DocumentScannerScreen(
 
     Scaffold(topBar = {
         CenterAlignedTopAppBar(title = {
-            Text(text = "Pindai Dokumen", style = MaterialTheme.typography.titleMedium)
+            if (isForRead){
+                Text(text = "Baca Dokumen", style = MaterialTheme.typography.titleMedium)
+            } else {
+                Text(text = "Pindai Dokumen", style = MaterialTheme.typography.titleMedium)
+            }
         }, navigationIcon = {
             IconButton(onClick = { navController.navigateUp() }) {
                 Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "BackArrow")
@@ -116,30 +130,32 @@ fun DocumentScannerScreen(
                     Text(text = "No scanned documents available")
                 }
 
-                Button(
-                    onClick = {
-                        activity?.let {
-                            scanner.getStartScanIntent(it)
-                                .addOnSuccessListener { intentSender ->
-                                    scannerLauncher.launch(
-                                        IntentSenderRequest.Builder(intentSender).build()
-                                    )
-                                }
-                                .addOnFailureListener {
-                                    Log.e("DocumentScannerScreen", "Error launching scanner: $it")
-                                }
-                        }
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth(0.8f)
-                        .align(Alignment.CenterHorizontally)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.DocumentScanner,
-                        contentDescription = "Scan Document",
-                        modifier = Modifier.padding(horizontal = 8.dp)
-                    )
-                    Text(text = "Scan Dokumen")
+                if (!isForRead){
+                    Button(
+                        onClick = {
+                            activity?.let {
+                                scanner.getStartScanIntent(it)
+                                    .addOnSuccessListener { intentSender ->
+                                        scannerLauncher.launch(
+                                            IntentSenderRequest.Builder(intentSender).build()
+                                        )
+                                    }
+                                    .addOnFailureListener {
+                                        Log.e("DocumentScannerScreen", "Error launching scanner: $it")
+                                    }
+                            }
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth(0.8f)
+                            .align(Alignment.CenterHorizontally)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.DocumentScanner,
+                            contentDescription = "Scan Document",
+                            modifier = Modifier.padding(horizontal = 8.dp)
+                        )
+                        Text(text = "Scan Dokumen")
+                    }
                 }
             }
         }

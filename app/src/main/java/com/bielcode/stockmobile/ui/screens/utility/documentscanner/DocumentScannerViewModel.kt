@@ -10,10 +10,10 @@ import com.google.mlkit.vision.documentscanner.GmsDocumentScanningResult
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileOutputStream
+import java.net.URL
 
 class DocumentScannerViewModel(private val repository: Repository) : ViewModel() {
     internal val _imageUris = MutableStateFlow<List<Uri>>(emptyList())
@@ -54,6 +54,14 @@ class DocumentScannerViewModel(private val repository: Repository) : ViewModel()
             } else {
                 Log.e("DocumentScannerVM", "No pages found in scan result")
             }
+        }
+    }
+
+    fun loadDocumentUris(context: Context, transactionCode: String) {
+        viewModelScope.launch {
+            val documentUris = repository.getDocumentUrisFromFirebase(transactionCode)
+            val uris = listOfNotNull(documentUris.first, documentUris.second).map { Uri.parse(it) }
+            _imageUris.value = uris
         }
     }
 

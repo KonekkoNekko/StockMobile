@@ -432,7 +432,7 @@ fun TransactionEntryScreen(
                                         "TransactionEntryScreen",
                                         "Navigating to DocumentScanner with transactionCode: $transactionCode"
                                     )
-                                    navController.navigate("documentScanner/$transactionCode")
+                                    navController.navigate("documentScanner/${transactionCode}?isForRead=false")
                                 }
                             }
                         },

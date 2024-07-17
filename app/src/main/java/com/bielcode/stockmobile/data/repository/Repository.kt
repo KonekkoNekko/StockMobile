@@ -541,6 +541,23 @@ class Repository private constructor(
         return userPreference.getDocumentUris(transactionCode).firstOrNull() ?: Pair(null, null)
     }
 
+    suspend fun getDocumentUrisFromFirebase(transactionCode: String): Pair<String?, String?> {
+        return try {
+            val jpgRef = storage.reference.child("transactions/$transactionCode.jpg")
+            val pdfRef = storage.reference.child("transactions/$transactionCode.pdf")
+
+            val jpgUri = jpgRef.downloadUrl.await().toString()
+            val pdfUri = pdfRef.downloadUrl.await().toString()
+
+            Pair(jpgUri, pdfUri)
+        } catch (e: Exception) {
+            Log.e("Repository", "Error fetching document URIs", e)
+            Pair(null, null)
+        }
+    }
+
+
+
 
     companion object {
         private const val TAG = "Repository"
