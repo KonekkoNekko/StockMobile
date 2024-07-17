@@ -146,6 +146,14 @@ fun TransactionEntryScreen(
         }
     }
 
+    fun validateCompleteInputs() {
+        if (transactionType.isEmpty() || selectedPartner == null || transactionDate == null || transactionItems.isEmpty() || selectedContacts == null) {
+            dialogTitle = "Input Tidak Lengkap"
+            dialogContent = "Harap lengkapi semua input sebelum melanjutkan."
+            showDialog = true
+        }
+    }
+
     fun validateInputs() {
         when {
             transactionType.isEmpty() -> {
@@ -443,10 +451,13 @@ fun TransactionEntryScreen(
 
                 Button(
                     onClick = {
-                        transactionEntryViewModel.saveTransaction { transactionCode ->
-                            transactionEntryViewModel.saveTransactionToFirebase()
-                            transactionEntryViewModel.clearTransactionData()  // Clear transaction data after saving
-                            navController.navigate(Screen.Transaction.route)
+                        validateCompleteInputs()
+                        if (!showDialog) {
+                            transactionEntryViewModel.saveTransaction { transactionCode ->
+                                transactionEntryViewModel.saveTransactionToFirebase()
+                                transactionEntryViewModel.clearTransactionData()  // Clear transaction data after saving
+                                navController.navigate(Screen.Transaction.route)
+                            }
                         }
                     },
                     modifier = Modifier
