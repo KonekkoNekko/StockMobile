@@ -148,7 +148,11 @@ class Repository private constructor(
         }
     }
 
-    suspend fun saveTransaction(transactionItems: Map<String, TransactionItem>, destination: String, type: String) {
+    suspend fun saveTransaction(
+        transactionItems: Map<String, TransactionItem>,
+        destination: String,
+        type: String
+    ) {
         val transactionData = mapOf(
             "transactionDestination" to destination,
             "transactionItems" to transactionItems,
@@ -157,7 +161,10 @@ class Repository private constructor(
             "transactionCode" to "IN-${transactionItems.values.first().itemCatalog}-${transactionItems.values.first().itemSize}-1", // Example code generation
             "transactionAddress" to "", // Add other fields as necessary
             "transactionContact" to mapOf<String, Any>(), // Example empty map for contact
-            "transactionCoordination" to com.google.firebase.firestore.GeoPoint(0.0, 0.0), // Example geolocation
+            "transactionCoordination" to com.google.firebase.firestore.GeoPoint(
+                0.0,
+                0.0
+            ), // Example geolocation
             "transactionDocumentUrl" to "", // Example document URL
             "transactionDocumentationUrl" to "", // Example documentation URL
             "transactionPhone" to "" // Example phone number
@@ -193,7 +200,12 @@ class Repository private constructor(
         }
     }
 
-    suspend fun uploadPhoto(imageData: ByteArray, filename: String, onSuccess: (String) -> Unit, onFailure: (Exception) -> Unit) {
+    suspend fun uploadPhoto(
+        imageData: ByteArray,
+        filename: String,
+        onSuccess: (String) -> Unit,
+        onFailure: (Exception) -> Unit
+    ) {
         try {
             val storageRef = storage.reference
             val fileRef = storageRef.child(filename)
@@ -259,7 +271,7 @@ class Repository private constructor(
         }
     }
 
-    suspend fun getPartnerDetailsByName(name: String): Partner?{
+    suspend fun getPartnerDetailsByName(name: String): Partner? {
         return try {
             val partnersCollection = firestore.collection("partners")
                 .whereEqualTo("partnerName", name)
@@ -383,7 +395,7 @@ class Repository private constructor(
     }
 
     fun getLocation(): Flow<Pair<String, String>> = userPreference.getLocation()
-    suspend fun clearLocation(){
+    suspend fun clearLocation() {
         userPreference.clearLocation()
     }
 
@@ -414,8 +426,12 @@ class Repository private constructor(
             Transaction(
                 transactionCode = this.getString("transactionCode") ?: "",
                 transactionAddress = this.getString("transactionAddress") ?: "",
-                transactionContact = this.get("transactionContact") as? Map<String, Any> ?: emptyMap(),
-                transactionCoordination = this.getGeoPoint("transactionCoordination") ?: GeoPoint(0.0, 0.0),
+                transactionContact = this.get("transactionContact") as? Map<String, Any>
+                    ?: emptyMap(),
+                transactionCoordination = this.getGeoPoint("transactionCoordination") ?: GeoPoint(
+                    0.0,
+                    0.0
+                ),
                 transactionDate = this.getTimestamp("transactionDate")?.toDate(),
                 transactionDestination = this.getString("transactionDestination") ?: "",
                 transactionDocumentUrl = this.getString("transactionDocumentUrl") ?: "",
@@ -446,7 +462,9 @@ class Repository private constructor(
 
     suspend fun saveTransaction(transaction: Transaction) {
         val transactionData = transaction.toMap()
-        firestore.collection("transactions").add(transactionData).await()
+        firestore.collection("transactions")
+            .document(transaction.transactionCode)
+            .set(transactionData).await()
     }
 
     suspend fun getTransactionCountByPrefix(prefix: String): Int {
@@ -522,7 +540,6 @@ class Repository private constructor(
     suspend fun getDocumentUris(transactionCode: String): Pair<String?, String?> {
         return userPreference.getDocumentUris(transactionCode).firstOrNull() ?: Pair(null, null)
     }
-
 
 
     companion object {

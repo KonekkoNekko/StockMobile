@@ -98,6 +98,10 @@ class UserPreference private constructor(private val dataStore: DataStore<Prefer
     suspend fun clearTransaction() {
         dataStore.edit { preferences ->
             preferences.remove(TRANSACTION_KEY)
+            preferences.remove(TRANSACTION_CODE_KEY)
+            preferences.remove(DOCUMENT_PDF_URI_KEY)
+            preferences.remove(DOCUMENT_JPG_URI_KEY)
+
         }
     }
 
@@ -107,8 +111,8 @@ class UserPreference private constructor(private val dataStore: DataStore<Prefer
         jsonObject.put("transactionAddress", transaction.transactionAddress)
         jsonObject.put("transactionContact", JSONObject(transaction.transactionContact))
         jsonObject.put("transactionCoordination", JSONObject().apply {
-            put("latitude", transaction.transactionCoordination.latitude)
-            put("longitude", transaction.transactionCoordination.longitude)
+            put("latitude", transaction.transactionCoordination?.latitude ?: 0.0)
+            put("longitude", transaction.transactionCoordination?.longitude ?: 0.0)
         })
         jsonObject.put("transactionDate", transaction.transactionDate?.time)
         jsonObject.put("transactionDestination", transaction.transactionDestination)
@@ -201,6 +205,7 @@ class UserPreference private constructor(private val dataStore: DataStore<Prefer
             Pair(pdfUri, jpgUri)
         }
     }
+
 
 
     companion object {

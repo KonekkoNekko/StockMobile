@@ -7,7 +7,7 @@ data class Transaction(
     val transactionCode: String = "",
     val transactionAddress: String = "",
     val transactionContact: Map<String, Any> = emptyMap(),
-    val transactionCoordination: GeoPoint = GeoPoint(0.0, 0.0),
+    val transactionCoordination: GeoPoint? = null,
     val transactionDate: Date? = null,
     val transactionDestination: String = "",
     val transactionDocumentUrl: String = "",

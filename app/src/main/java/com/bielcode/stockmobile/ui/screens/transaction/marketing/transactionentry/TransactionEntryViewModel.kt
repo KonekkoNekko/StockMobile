@@ -9,6 +9,7 @@ import com.bielcode.stockmobile.data.model.Transaction
 import com.bielcode.stockmobile.data.model.TransactionItem
 import com.bielcode.stockmobile.data.repository.Repository
 import com.google.firebase.firestore.GeoPoint
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
@@ -51,7 +52,7 @@ class TransactionEntryViewModel(private val repository: Repository) : ViewModel(
 
     init {
         fetchPartners()
-        fetchTransactionFromPreferences()
+        clearTransactionFromPreferences()
     }
 
     fun fetchPartners() {
@@ -101,10 +102,66 @@ class TransactionEntryViewModel(private val repository: Repository) : ViewModel(
         _transactionDate.value = date
     }
 
+    fun saveTransactionToPreferences(onTransactionSaved: (String) -> Unit) {
+        viewModelScope.launch {
+            val transactionCode = generateTransactionCode()
+            saveTransactionCodeToPreferences(transactionCode)  // Save transaction code to preferences
+
+            val transaction = Transaction(
+                transactionCode = transactionCode,
+                transactionAddress = _selectedPartner.value?.partnerAddress ?: "",
+                transactionContact = _selectedPartner.value?.partnerContacts?.firstOrNull()?.let {
+                    mapOf(
+                        "contactName" to it.contactName,
+                        "contactPhone" to it.contactPhone,
+                        "contactPosition" to it.contactPosition
+                    )
+                } ?: emptyMap(),
+                transactionCoordination = _selectedPartner.value?.partnerCoordinate ?: GeoPoint(0.0, 0.0),
+                transactionDate = _transactionDate.value,
+                transactionDestination = _selectedPartner.value?.partnerName ?: "",
+                transactionDocumentUrl = "",
+                transactionDocumentationUrl = "",
+                transactionItems = _transactionItems.value.associateBy { it.itemCatalog }.mapValues { entry ->
+                    entry.value
+                },
+                transactionPhone = _selectedPartner.value?.partnerPhone ?: "",
+                transactionType = _transactionType.value
+            )
+
+            repository.saveTransactionToPreferences(transaction)
+            Log.d("TransactionEntryVM", "Transaction saved to preferences with code: $transactionCode")
+            Log.d("TransactionEntryVM", "Transaction data: $transaction")
+            onTransactionSaved(transactionCode)  // Call the callback with the transaction code
+        }
+    }
+
+    // New function to clear transaction from preferences
+    // New function to clear transaction from preferences
+    fun clearTransactionData() {
+        viewModelScope.launch {
+            repository.clearTransactionFromPreferences()
+            Log.d("TransactionEntryVM", "Transaction preferences cleared")
+            _transactionType.value = "Penjualan"
+            _transactionDate.value = Date()
+            _selectedPartner.value = null
+            _selectedContacts.value = emptyList()
+            _transactionItems.value = emptyList()
+            _query.value = ""
+        }
+    }
+
+    // Logging tambahan pada saveTransaction
     fun saveTransaction(onTransactionSaved: (String) -> Unit) {
         viewModelScope.launch {
             val transactionCode = generateTransactionCode()
             saveTransactionCodeToPreferences(transactionCode)  // Save transaction code to preferences
+
+            Log.d("TransactionEntryVM", "Selected Partner: ${_selectedPartner.value}")
+            Log.d("TransactionEntryVM", "Transaction Items: ${_transactionItems.value}")
+            Log.d("TransactionEntryVM", "Transaction Date: ${_transactionDate.value}")
+            Log.d("TransactionEntryVM", "Transaction Type: ${_transactionType.value}")
+
             val transaction = Transaction(
                 transactionCode = transactionCode,
                 transactionAddress = _selectedPartner.value?.partnerAddress ?: "",
@@ -118,7 +175,7 @@ class TransactionEntryViewModel(private val repository: Repository) : ViewModel(
                 transactionCoordination = _selectedPartner.value?.partnerCoordinate ?: GeoPoint(0.0, 0.0),
                 transactionDate = _transactionDate.value ?: Date(),
                 transactionDestination = _selectedPartner.value?.partnerName ?: "",
-                transactionDocumentUrl = "",
+                transactionDocumentUrl = "transactions/$transactionCode",
                 transactionDocumentationUrl = "",
                 transactionItems = _transactionItems.value.associateBy { it.itemCatalog }.mapValues { entry ->
                     TransactionItem(
@@ -132,13 +189,24 @@ class TransactionEntryViewModel(private val repository: Repository) : ViewModel(
                 transactionPhone = _selectedPartner.value?.partnerPhone ?: "",
                 transactionType = _transactionType.value
             )
+
             repository.saveTransaction(transaction)
-            repository.saveTransactionToPreferences(transaction)
+            clearTransactionData()  // Clear transaction data after saving
             Log.d("TransactionEntryVM", "Transaction saved with code: $transactionCode")
             onTransactionSaved(transactionCode)  // Call the callback with the transaction code
         }
     }
 
+
+    fun saveTransactionToFirebase() {
+        viewModelScope.launch {
+            _transaction.value?.let { transaction ->
+                repository.saveTransaction(transaction)
+                repository.clearTransactionFromPreferences()
+                Log.d("TransactionEntryVM", "Transaction uploaded to Firebase and cleared from preferences")
+            }
+        }
+    }
 
     private suspend fun generateTransactionCode(): String {
         val prefix = if (_transactionType.value == "Konsinyasi") "CNS" else "SLD"
@@ -148,9 +216,6 @@ class TransactionEntryViewModel(private val repository: Repository) : ViewModel(
         Log.d("TransactionEntryVM", "Generated Transaction Code: $transactionCode")
         return transactionCode
     }
-
-
-
 
     fun fetchTransactionDetails(transactionCode: String) {
         viewModelScope.launch {
@@ -202,10 +267,13 @@ class TransactionEntryViewModel(private val repository: Repository) : ViewModel(
                     _selectedContacts.value = _selectedPartner.value?.partnerContacts?.map { contact ->
                         contact to (it.transactionContact["contactName"] == contact.contactName)
                     } ?: emptyList()
+
+                    Log.d("TransactionEntryVM", "Transaction restored from preferences: $it")
                 }
             }
         }
     }
+
 
     internal fun updateTransactionInPreferences() {
         viewModelScope.launch {
@@ -225,6 +293,7 @@ class TransactionEntryViewModel(private val repository: Repository) : ViewModel(
                         } ?: emptyMap()
                 )
                 repository.saveTransactionToPreferences(updatedTransaction)
+                Log.d("TransactionEntryVM", "Transaction updated in preferences: $updatedTransaction")
             }
         }
     }
@@ -252,7 +321,6 @@ class TransactionEntryViewModel(private val repository: Repository) : ViewModel(
         }
     }
 
-
     fun getTransactionCodeFromPreferences(): String? {
         var code: String? = null
         viewModelScope.launch {
@@ -262,10 +330,18 @@ class TransactionEntryViewModel(private val repository: Repository) : ViewModel(
         return code
     }
 
-    fun saveDocumentUris(pdfUri: String, jpgUri: String) {
+    fun saveDocumentUrls(transactionCode: String, documentUrl: String) {
         viewModelScope.launch {
-            val transactionCode = getTransactionCodeFromPreferences() ?: return@launch
-            repository.saveDocumentUris(transactionCode, pdfUri, jpgUri)
+            val transaction = _transaction.value
+            if (transaction != null) {
+                val updatedTransaction = transaction.copy(
+                    transactionDocumentUrl = documentUrl,
+                    transactionDocumentationUrl = "$documentUrl.jpg"
+                )
+                _transaction.value = updatedTransaction
+                repository.saveTransaction(updatedTransaction)
+                Log.d("TransactionEntryVM", "Document URLs saved to transaction: $transactionCode")
+            }
         }
     }
 
@@ -273,5 +349,25 @@ class TransactionEntryViewModel(private val repository: Repository) : ViewModel(
         viewModelScope.launch {
             _documentUris.value = repository.getDocumentUris(transactionCode)
         }
+    }
+
+    suspend fun getTransactionFromPreferences(): Flow<Transaction?> {
+        return repository.getTransactionFromPreferences()
+    }
+
+    fun updateTransaction(transaction: Transaction) {
+        _transaction.value = transaction
+        _transactionType.value = transaction.transactionType
+        _transactionDate.value = transaction.transactionDate ?: Date()
+        _transactionItems.value = transaction.transactionItems.values.toList()
+        _selectedPartner.value = partners.value.find { partner -> partner.partnerName == transaction.transactionDestination }
+        _query.value = _selectedPartner.value?.partnerName ?: ""
+
+        // Mengupdate daftar kontak yang dipilih
+        _selectedContacts.value = _selectedPartner.value?.partnerContacts?.map { contact ->
+            contact to (transaction.transactionContact["contactName"] == contact.contactName)
+        } ?: emptyList()
+
+        Log.d("TransactionEntryVM", "Transaction updated: $transaction")
     }
 }

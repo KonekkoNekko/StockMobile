@@ -1,4 +1,4 @@
-@file:OptIn(ExperimentalLayoutApi::class)
+@file:OptIn(ExperimentalMaterial3Api::class)
 
 package com.bielcode.stockmobile.ui.screens.transaction.marketing.transactionentry
 
@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -66,6 +67,7 @@ import com.bielcode.stockmobile.ViewModelFactory
 import com.bielcode.stockmobile.data.injection.Injection
 import com.bielcode.stockmobile.data.model.TransactionItem
 import com.bielcode.stockmobile.ui.components.ContactCard
+import com.bielcode.stockmobile.ui.components.DialogWindow
 import com.bielcode.stockmobile.ui.components.ProductCard
 import com.bielcode.stockmobile.ui.screens.navigation.utils.Screen
 import kotlinx.coroutines.launch
@@ -99,6 +101,9 @@ fun TransactionEntryScreen(
     var selected by remember { mutableStateOf(transactionType) }
     var transactionDateString by remember { mutableStateOf("") }
     var expandDropdown by remember { mutableStateOf(false) }
+    var showDialog by remember { mutableStateOf(false) }
+    var dialogTitle by remember { mutableStateOf("") }
+    var dialogContent by remember { mutableStateOf("") }
 
     fun showDatePicker() {
         val datePickerDialog = DatePickerDialog(
@@ -141,15 +146,46 @@ fun TransactionEntryScreen(
         }
     }
 
+    fun validateInputs() {
+        when {
+            transactionType.isEmpty() -> {
+                dialogTitle = "Input Tipe Transaksi Kosong"
+                dialogContent = "Harap pilih tipe transaksi sebelum melanjutkan."
+                showDialog = true
+            }
+
+            transactionDate == null -> {
+                dialogTitle = "Input Tanggal Transaksi Kosong"
+                dialogContent = "Harap pilih tanggal transaksi sebelum melanjutkan."
+                showDialog = true
+            }
+
+            selectedPartner == null -> {
+                dialogTitle = "Input Destinasi Transaksi Kosong"
+                dialogContent = "Harap pilih destinasi transaksi sebelum melanjutkan."
+                showDialog = true
+            }
+
+            else -> {
+                // Input valid, lanjutkan tindakan
+            }
+        }
+    }
+
+    val isItemEmpty = transactionItems.isEmpty()
+
     Scaffold(topBar = {
         CenterAlignedTopAppBar(title = {
-            if (transaction == null) {
+            if (transactionCode == null) {
                 Text(text = "Tambah Transaksi Baru", style = MaterialTheme.typography.titleMedium)
             } else {
                 Text(text = "Edit Transaksi Baru", style = MaterialTheme.typography.titleMedium)
             }
         }, navigationIcon = {
-            IconButton(onClick = { navController.navigateUp() }) {
+            IconButton(onClick = {
+                transactionEntryViewModel.clearTransactionData()  // Clear transaction data after saving
+                navController.navigate(Screen.Transaction.route)
+            }) {
                 Icon(
                     imageVector = Icons.Default.ArrowBack,
                     contentDescription = "BackArrow",
@@ -164,7 +200,7 @@ fun TransactionEntryScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(32.dp),
+                    .padding(horizontal = 32.dp),
                 horizontalAlignment = Alignment.Start,
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
@@ -223,6 +259,15 @@ fun TransactionEntryScreen(
                         IconButton(onClick = { showDatePicker() }) {
                             Icon(imageVector = Icons.Default.CalendarMonth, contentDescription = "")
                         }
+                    },
+                    isError = isItemEmpty,
+                    supportingText = {
+                        if (isItemEmpty) {
+                            Text(
+                                text = "Jangan Isi Kolom Ini Apabila Daftar Bawaan Kosong",
+                                color = Color.Red
+                            )
+                        }
                     }
                 )
                 ExposedDropdownMenuBox(
@@ -232,6 +277,7 @@ fun TransactionEntryScreen(
                 ) {
                     TextField(
                         value = query,
+                        readOnly = isItemEmpty,
                         onValueChange = {
                             transactionEntryViewModel.setQuery(it)
                             transactionEntryViewModel.filterPartners(it)
@@ -243,6 +289,15 @@ fun TransactionEntryScreen(
                             .fillMaxWidth(),
                         trailingIcon = {
                             ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandDropdown)
+                        },
+                        isError = isItemEmpty,
+                        supportingText = {
+                            if (isItemEmpty) {
+                                Text(
+                                    text = "Jangan Isi Kolom Ini Apabila Daftar Bawaan Kosong",
+                                    color = Color.Red
+                                )
+                            }
                         }
                     )
 
@@ -261,9 +316,7 @@ fun TransactionEntryScreen(
                         }
                     }
                 }
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
+                Column {
                     Text(text = "Daftar Kontak", style = MaterialTheme.typography.titleMedium)
                     Row(
                         modifier = Modifier.horizontalScroll(rememberScrollState()),
@@ -284,13 +337,14 @@ fun TransactionEntryScreen(
                 }
 
                 Column(
-                    modifier = Modifier,
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    modifier = Modifier
                 ) {
                     Text(text = "Daftar Bawaan", style = MaterialTheme.typography.titleMedium)
                     LazyColumn(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(120.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         items(transactionItems) { product ->
                             val dismissState = rememberDismissState(
@@ -339,16 +393,17 @@ fun TransactionEntryScreen(
                         }
                     }
 
-
                     Button(
-                        onClick = { navController.navigate(Screen.SearchAddProduct.route) },
+                        onClick = {
+                            navController.navigate(Screen.SearchAddProduct.route)
+                        },
                         modifier = Modifier
                             .fillMaxWidth(0.8f)
                             .align(Alignment.CenterHorizontally)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Add,
-                            contentDescription = "Kamera",
+                            contentDescription = "Tambah Produk",
                             modifier = Modifier.padding(horizontal = 8.dp)
                         )
                         Text(text = "Tambah Produk")
@@ -360,19 +415,17 @@ fun TransactionEntryScreen(
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(text = "Dokumen Terkait", style = MaterialTheme.typography.titleMedium)
-                    documentUris.second?.let { jpgUri ->
-                        AsyncImage(
-                            model = jpgUri,
-                            contentDescription = "Preview Document",
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 8.dp)
-                        )
-                    }
                     Button(
                         onClick = {
-                            transactionEntryViewModel.saveTransaction { transactionCode ->
-                                navController.navigate("documentScanner/$transactionCode")
+                            validateInputs()
+                            if (!showDialog) {
+                                transactionEntryViewModel.saveTransactionToPreferences { transactionCode ->
+                                    Log.d(
+                                        "TransactionEntryScreen",
+                                        "Navigating to DocumentScanner with transactionCode: $transactionCode"
+                                    )
+                                    navController.navigate("documentScanner/$transactionCode")
+                                }
                             }
                         },
                         modifier = Modifier
@@ -386,12 +439,15 @@ fun TransactionEntryScreen(
                         )
                         Text(text = "Pindai Dokumen")
                     }
-
                 }
 
                 Button(
                     onClick = {
-                        transactionEntryViewModel.clearTransactionFromPreferences()
+                        transactionEntryViewModel.saveTransaction { transactionCode ->
+                            transactionEntryViewModel.saveTransactionToFirebase()
+                            transactionEntryViewModel.clearTransactionData()  // Clear transaction data after saving
+                            navController.navigate(Screen.Transaction.route)
+                        }
                     },
                     modifier = Modifier
                         .fillMaxWidth(0.8f)
@@ -406,6 +462,7 @@ fun TransactionEntryScreen(
                         Text(text = "Simpan Transaksi")
                     }
                 }
+
                 Button(
                     onClick = { /* Implement delete transaction logic */ },
                     modifier = Modifier
@@ -420,5 +477,16 @@ fun TransactionEntryScreen(
                 }
             }
         }
+    }
+
+    if (showDialog) {
+        DialogWindow(
+            titleText = dialogTitle,
+            contentText = dialogContent,
+            confirmText = "OK",
+            dismissText = "",
+            clickConfirm = { showDialog = false },
+            clickDismiss = {}
+        )
     }
 }

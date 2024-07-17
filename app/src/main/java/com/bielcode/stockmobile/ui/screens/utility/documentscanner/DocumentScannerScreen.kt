@@ -41,9 +41,9 @@ fun DocumentScannerScreen(
         )
     )
 
-    // Ensure the saved URIs are loaded
+    // Clear the URIs on first load
     LaunchedEffect(Unit) {
-        documentScannerViewModel.loadSavedUris(context)
+        documentScannerViewModel._imageUris.value = emptyList() // Ensure it's empty on first load
     }
 
     val imageUris by documentScannerViewModel.imageUris.collectAsState()

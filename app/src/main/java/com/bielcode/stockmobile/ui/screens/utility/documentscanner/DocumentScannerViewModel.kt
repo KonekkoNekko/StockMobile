@@ -10,13 +10,19 @@ import com.google.mlkit.vision.documentscanner.GmsDocumentScanningResult
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileOutputStream
 
 class DocumentScannerViewModel(private val repository: Repository) : ViewModel() {
-    private val _imageUris = MutableStateFlow<List<Uri>>(emptyList())
+    internal val _imageUris = MutableStateFlow<List<Uri>>(emptyList())
     val imageUris: StateFlow<List<Uri>> = _imageUris
+
+    init {
+        // Initialize with empty list
+        _imageUris.value = emptyList()
+    }
 
     fun handleScanResult(context: Context, result: GmsDocumentScanningResult?, transactionCode: String) {
         result?.let {
@@ -39,6 +45,9 @@ class DocumentScannerViewModel(private val repository: Repository) : ViewModel()
                         val jpgUri = _imageUris.value.firstOrNull()?.let { uri -> saveFile(context, uri, "$transactionCode.jpg") }
                         if (pdfUri != null && jpgUri != null) {
                             repository.saveDocumentUris(transactionCode, pdfUri.toString(), jpgUri.toString())
+                            // Upload scanned documents to Firebase Storage
+                            repository.uploadFile(Uri.parse(pdfUri.toString()), "$transactionCode.pdf", "transactions")
+                            repository.uploadFile(Uri.parse(jpgUri.toString()), "$transactionCode.jpg", "transactions")
                         }
                     }
                 }
