@@ -97,7 +97,13 @@ fun TransactionDetailScreen(
             modifier = Modifier.padding(it)
         ) {
             if (transaction == null) {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    CircularProgressIndicator()
+                }
             } else {
                 Log.d("TransactionDetailScreen", "transaction: $transaction")
                 transaction?.let {
