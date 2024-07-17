@@ -137,7 +137,6 @@ class TransactionEntryViewModel(private val repository: Repository) : ViewModel(
     }
 
     // New function to clear transaction from preferences
-    // New function to clear transaction from preferences
     fun clearTransactionData() {
         viewModelScope.launch {
             repository.clearTransactionFromPreferences()
@@ -154,13 +153,8 @@ class TransactionEntryViewModel(private val repository: Repository) : ViewModel(
     // Logging tambahan pada saveTransaction
     fun saveTransaction(onTransactionSaved: (String) -> Unit) {
         viewModelScope.launch {
-            val transactionCode = generateTransactionCode()
+            val transactionCode = _transaction.value?.transactionCode ?: generateTransactionCode()
             saveTransactionCodeToPreferences(transactionCode)  // Save transaction code to preferences
-
-            Log.d("TransactionEntryVM", "Selected Partner: ${_selectedPartner.value}")
-            Log.d("TransactionEntryVM", "Transaction Items: ${_transactionItems.value}")
-            Log.d("TransactionEntryVM", "Transaction Date: ${_transactionDate.value}")
-            Log.d("TransactionEntryVM", "Transaction Type: ${_transactionType.value}")
 
             val transaction = Transaction(
                 transactionCode = transactionCode,
@@ -192,11 +186,48 @@ class TransactionEntryViewModel(private val repository: Repository) : ViewModel(
 
             repository.saveTransaction(transaction)
             clearTransactionData()  // Clear transaction data after saving
-            Log.d("TransactionEntryVM", "Transaction saved with code: $transactionCode")
             onTransactionSaved(transactionCode)  // Call the callback with the transaction code
         }
     }
 
+    fun updateTransaction(onTransactionUpdated: (String) -> Unit) {
+        viewModelScope.launch {
+            val transactionCode = _transaction.value?.transactionCode ?: generateTransactionCode()
+            saveTransactionCodeToPreferences(transactionCode)  // Save transaction code to preferences
+
+            val transaction = Transaction(
+                transactionCode = transactionCode,
+                transactionAddress = _selectedPartner.value?.partnerAddress ?: "",
+                transactionContact = _selectedPartner.value?.partnerContacts?.firstOrNull()?.let {
+                    mapOf(
+                        "contactName" to it.contactName,
+                        "contactPhone" to it.contactPhone,
+                        "contactPosition" to it.contactPosition
+                    )
+                } ?: emptyMap(),
+                transactionCoordination = _selectedPartner.value?.partnerCoordinate ?: GeoPoint(0.0, 0.0),
+                transactionDate = _transactionDate.value ?: Date(),
+                transactionDestination = _selectedPartner.value?.partnerName ?: "",
+                transactionDocumentUrl = "transactions/$transactionCode",
+                transactionDocumentationUrl = "",
+                transactionItems = _transactionItems.value.associateBy { it.itemCatalog }.mapValues { entry ->
+                    TransactionItem(
+                        entry.value.isChecked,
+                        entry.value.itemCatalog,
+                        entry.value.itemName,
+                        entry.value.itemQty,
+                        entry.value.itemSize
+                    )
+                },
+                transactionPhone = _selectedPartner.value?.partnerPhone ?: "",
+                transactionType = _transactionType.value
+            )
+
+            repository.updateTransactionInFirebase(transaction)
+            clearTransactionData()  // Clear transaction data after updating
+            onTransactionUpdated(transactionCode)  // Call the callback with the transaction code
+        }
+    }
 
     fun saveTransactionToFirebase() {
         viewModelScope.launch {
@@ -228,9 +259,30 @@ class TransactionEntryViewModel(private val repository: Repository) : ViewModel(
                 _transactionItems.value = it.transactionItems.values.toList()
                 _selectedPartner.value = partners.value.find { partner -> partner.partnerName == it.transactionDestination }
                 _query.value = _selectedPartner.value?.partnerName ?: ""
+
+                // Update _selectedContacts with transaction contact details
+                _selectedContacts.value = _selectedPartner.value?.partnerContacts?.map { contact ->
+                    contact to (it.transactionContact["contactName"] == contact.contactName)
+                } ?: emptyList()
+
+                Log.d("TransactionEntryVM", "Selected Contacts: ${_selectedContacts.value}")
             }
         }
     }
+
+
+    fun updateTransactionInFirebase(transaction: Transaction) {
+        viewModelScope.launch {
+            try {
+                repository.updateTransactionInFirebase(transaction)
+                clearTransactionData()  // Clear transaction data after updating
+                Log.d("TransactionEntryVM", "Transaction updated in Firebase with code: ${transaction.transactionCode}")
+            } catch (e: Exception) {
+                Log.e("TransactionEntryVM", "Error updating transaction in Firebase", e)
+            }
+        }
+    }
+
 
     fun addTransactionItem(item: TransactionItem) {
         _transactionItems.value += item
@@ -369,5 +421,13 @@ class TransactionEntryViewModel(private val repository: Repository) : ViewModel(
         } ?: emptyList()
 
         Log.d("TransactionEntryVM", "Transaction updated: $transaction")
+    }
+
+    fun deleteTransaction(transactionCode: String) {
+        viewModelScope.launch {
+            repository.deleteTransaction(transactionCode)
+            clearTransactionFromPreferences()
+            Log.d("TransactionEntryVM", "Transaction deleted: $transactionCode")
+        }
     }
 }

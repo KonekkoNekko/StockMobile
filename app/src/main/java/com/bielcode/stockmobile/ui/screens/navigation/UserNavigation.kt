@@ -236,6 +236,15 @@ fun UserNavigation(
                 val transactionCode = backStackEntry.arguments?.getString("transactionCode") ?: ""
                 TransactionDetailScreen_Delivery(navController, transactionCode)
             }
+            composable(
+                route = "transactionEntry/{transactionCode}",
+                arguments = listOf(
+                    navArgument("transactionCode") { type = NavType.StringType; nullable = true }
+                )
+            ) { backStackEntry ->
+                val transactionCode = backStackEntry.arguments?.getString("transactionCode")
+                TransactionEntryScreen(navController, transactionCode)
+            }
 
         }
     }

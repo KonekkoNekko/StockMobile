@@ -555,6 +555,27 @@ class Repository private constructor(
             Pair(null, null)
         }
     }
+    suspend fun deleteTransaction(transactionCode: String) {
+        try {
+            // Hapus dokumen transaksi dari Firestore
+            firestore.collection("transactions").document(transactionCode).delete().await()
+            Log.d("Repository", "Transaction deleted successfully: $transactionCode")
+        } catch (e: Exception) {
+            Log.e("Repository", "Error deleting transaction: $transactionCode", e)
+        }
+    }
+
+    suspend fun updateTransactionInFirebase(transaction: Transaction) {
+        try {
+            val transactionData = transaction.toMap()
+            firestore.collection("transactions")
+                .document(transaction.transactionCode)
+                .set(transactionData).await()
+            Log.d("Repository", "Transaction updated in Firebase with code: ${transaction.transactionCode}")
+        } catch (e: Exception) {
+            Log.e("Repository", "Error updating transaction in Firebase", e)
+        }
+    }
 
 
 

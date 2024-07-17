@@ -453,10 +453,16 @@ fun TransactionEntryScreen(
                     onClick = {
                         validateCompleteInputs()
                         if (!showDialog) {
-                            transactionEntryViewModel.saveTransaction { transactionCode ->
-                                transactionEntryViewModel.saveTransactionToFirebase()
-                                transactionEntryViewModel.clearTransactionData()  // Clear transaction data after saving
-                                navController.navigate(Screen.Transaction.route)
+                            if (transactionCode != null) {
+                                transactionEntryViewModel.updateTransaction { transactionCode ->
+                                    transactionEntryViewModel.clearTransactionData()  // Clear transaction data after saving
+                                    navController.navigate(Screen.Transaction.route)
+                                }
+                            } else {
+                                transactionEntryViewModel.saveTransaction { transactionCode ->
+                                    transactionEntryViewModel.clearTransactionData()  // Clear transaction data after saving
+                                    navController.navigate(Screen.Transaction.route)
+                                }
                             }
                         }
                     },
@@ -474,17 +480,24 @@ fun TransactionEntryScreen(
                     }
                 }
 
-                Button(
-                    onClick = { /* Implement delete transaction logic */ },
-                    modifier = Modifier
-                        .fillMaxWidth(0.8f)
-                        .align(Alignment.CenterHorizontally),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.Red,
-                        contentColor = Color.White
-                    )
-                ) {
-                    Text(text = "Hapus Produk")
+                if (transactionCode != null) {
+                    Button(
+                        onClick = {
+                            coroutineScope.launch {
+                                transactionEntryViewModel.deleteTransaction(transactionCode)
+                                navController.navigate(Screen.Transaction.route)
+                            }
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth(0.8f)
+                            .align(Alignment.CenterHorizontally),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color.Red,
+                            contentColor = Color.White
+                        )
+                    ) {
+                        Text(text = "Hapus Transaksi")
+                    }
                 }
             }
         }

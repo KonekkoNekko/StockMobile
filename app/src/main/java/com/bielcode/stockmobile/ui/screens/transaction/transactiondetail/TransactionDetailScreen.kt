@@ -85,7 +85,9 @@ fun TransactionDetailScreen(
                 )
             }
         }, actions = {
-            IconButton(onClick = {}) {
+            IconButton(onClick = {
+                navController.navigate("transactionEntry/${transactionCode}")
+            }) {
                 Icon(
                     imageVector = Icons.Default.Edit,
                     contentDescription = "Edit",
