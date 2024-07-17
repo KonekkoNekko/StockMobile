@@ -28,4 +28,8 @@ sealed class Screen(
     // Transaction Screen Route
     data object TransactionDetail : Screen("transactionDetail")
     data object TransactionEntry : Screen("transactionEntry")
+    data object SearchAddProduct : Screen("searchAddProduct")
+    data object TransactionStockInput : Screen("transactionStockInput")
+
 }
+

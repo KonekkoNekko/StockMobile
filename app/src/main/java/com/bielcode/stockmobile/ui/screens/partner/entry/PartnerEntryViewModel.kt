@@ -102,6 +102,7 @@ class PartnerEntryViewModel(private val repository: Repository) : ViewModel() {
                         this@PartnerEntryViewModel.address.value = address
                         this@PartnerEntryViewModel.coordinate.value = Coordinate("Selected Location", lat, lng)
                         Log.d("PartnerEntryViewModel", "Fetched location: address = $address, coordinate = $lat,$lng")
+                        repository.clearLocation()
                     }
                 }
             }

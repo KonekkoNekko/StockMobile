@@ -35,7 +35,7 @@ import com.bielcode.stockmobile.R
 import com.bielcode.stockmobile.ui.theme.WhiteFEF7FF
 
 @Composable
-fun ContactCard(name: String, position: String, phone: String, checked: Boolean) {
+fun ContactCard(name: String, position: String, phone: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
     val (checkedStatus, setCheckedStatus) = remember {
         mutableStateOf(false)
     }
@@ -69,6 +69,8 @@ fun ContactCard(name: String, position: String, phone: String, checked: Boolean)
                     ) {
                         Text(
                             text = name,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
                             style = MaterialTheme.typography.headlineSmall,
                             color = Color.Black,
                             modifier = Modifier.padding(bottom = 4.dp)
@@ -97,12 +99,19 @@ fun ContactCard(name: String, position: String, phone: String, checked: Boolean)
                         .fillMaxWidth()
                         .padding(4.dp),
                 ) {
-                    Checkbox(checked = checkedStatus, onCheckedChange = { setCheckedStatus(it)})
+                    Checkbox(
+                        checked = checkedStatus,
+                        onCheckedChange = {
+                            setCheckedStatus(it)
+                            onCheckedChange(it) // Call the external onCheckedChange callback
+                        }
+                    )
                 }
             }
         }
     }
 }
+
 
 @Composable
 fun ContactCard_EditDelete(
@@ -263,7 +272,8 @@ fun PreviewContactCard() {
         name = "Aulia Hasna",
         position = "Accounting",
         phone = "087802776756",
-        checked = true
+        checked = true,
+        onCheckedChange = {}
     )
 }
 

@@ -17,6 +17,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.GeoPoint
 import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.tasks.await
 
 class Repository private constructor(
@@ -382,6 +383,10 @@ class Repository private constructor(
     }
 
     fun getLocation(): Flow<Pair<String, String>> = userPreference.getLocation()
+    suspend fun clearLocation(){
+        userPreference.clearLocation()
+    }
+
 
     suspend fun getTransactions(): List<Transaction> {
         return try {
@@ -423,6 +428,99 @@ class Repository private constructor(
             Log.e("Repository", "Error mapping Transaction", e)
             null
         }
+    }
+
+    suspend fun getAllPartners(): List<Partner> {
+        return firestore.collection("partners").get().await().documents.mapNotNull { document ->
+            document.toPartner()
+        }
+    }
+
+    suspend fun getConsignPartners(): List<Partner> {
+        return firestore.collection("partners")
+            .whereEqualTo("partnerType.isConsign", true)
+            .get().await().documents.mapNotNull { document ->
+                document.toPartner()
+            }
+    }
+
+    suspend fun saveTransaction(transaction: Transaction) {
+        val transactionData = transaction.toMap()
+        firestore.collection("transactions").add(transactionData).await()
+    }
+
+    suspend fun getTransactionCountByPrefix(prefix: String): Int {
+        val snapshot = firestore.collection("transactions")
+            .whereGreaterThanOrEqualTo("transactionCode", prefix)
+            .whereLessThanOrEqualTo("transactionCode", "$prefix\uf8ff")
+            .get().await()
+        return snapshot.size()
+    }
+
+    private fun Transaction.toMap(): Map<String, Any?> {
+        return mapOf(
+            "transactionCode" to transactionCode,
+            "transactionAddress" to transactionAddress,
+            "transactionContact" to transactionContact,
+            "transactionCoordination" to transactionCoordination,
+            "transactionDate" to transactionDate,
+            "transactionDestination" to transactionDestination,
+            "transactionDocumentUrl" to transactionDocumentUrl,
+            "transactionDocumentationUrl" to transactionDocumentationUrl,
+            "transactionItems" to transactionItems.mapValues { it.value.toMap() },
+            "transactionPhone" to transactionPhone,
+            "transactionType" to transactionType
+        )
+    }
+
+    private fun TransactionItem.toMap(): Map<String, Any?> {
+        return mapOf(
+            "isChecked" to isChecked,
+            "itemCatalog" to itemCatalog,
+            "itemName" to itemName,
+            "itemQty" to itemQty,
+            "itemSize" to itemSize
+        )
+    }
+
+    suspend fun getTransactionByCode(transactionCode: String): Transaction? {
+        val snapshot = firestore.collection("transactions")
+            .whereEqualTo("transactionCode", transactionCode)
+            .get().await()
+        return if (snapshot.documents.isNotEmpty()) {
+            snapshot.documents[0].toTransaction()
+        } else {
+            null
+        }
+    }
+
+    // Fungsi untuk menyimpan transaksi ke dalam preferences
+    suspend fun saveTransactionToPreferences(transaction: Transaction) {
+        userPreference.saveTransaction(transaction)
+    }
+
+    // Fungsi untuk mengambil transaksi dari preferences
+    fun getTransactionFromPreferences(): Flow<Transaction?> = userPreference.getTransaction()
+
+    // Fungsi untuk menghapus transaksi dari preferences
+    suspend fun clearTransactionFromPreferences() {
+        userPreference.clearTransaction()
+    }
+
+    suspend fun saveTransactionCodeToPreferences(transactionCode: String) {
+        userPreference.saveTransactionCode(transactionCode)
+    }
+
+    suspend fun getTransactionCodeFromPreferences(): String? {
+        return userPreference.getTransactionCode().firstOrNull()
+    }
+
+    suspend fun saveDocumentUris(transactionCode: String, pdfUri: String, jpgUri: String) {
+        userPreference.saveDocumentUris(transactionCode, pdfUri, jpgUri)
+    }
+
+    suspend fun getDocumentUris(transactionCode: String): Pair<String?, String?> {
+        return userPreference.getDocumentUris(transactionCode).firstOrNull() ?: Pair(null, null)
     }
 
 

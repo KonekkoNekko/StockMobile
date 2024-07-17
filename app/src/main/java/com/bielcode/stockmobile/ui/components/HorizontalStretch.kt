@@ -41,15 +41,15 @@ fun ProductCard(name: String, size: String, qty: Int) {
         Row(
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // Image and text layout
             AsyncImage(
                 model = "https://placehold.co/100x200.png",
                 contentDescription = "Product Photo",
                 contentScale = ContentScale.Fit,
                 modifier = Modifier
-                    .fillMaxHeight() // Fixed width for the image
-                    .aspectRatio(1f / 1f) // Maintaining the aspect ratio
+                    .fillMaxHeight()
+                    .aspectRatio(1f / 1f)
             )
-
             Row(
                 modifier = Modifier
                     .fillMaxHeight()
@@ -60,13 +60,12 @@ fun ProductCard(name: String, size: String, qty: Int) {
                     modifier = Modifier.weight(2f)
                 ) {
                     Text(
-                        text = name, // 65 Character Maximum
+                        text = name,
                         style = MaterialTheme.typography.labelMedium,
                         color = Color.Black,
                         maxLines = 4
                     )
                 }
-
                 Column(
                     modifier = Modifier.weight(1f),
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -104,11 +103,11 @@ fun ProductCard(name: String, size: String, qty: Int) {
                     )
                 }
             }
-
-
         }
     }
 }
+
+
 
 @Composable
 fun TransactionCard(code: String, qty: Int, destination: String, type: String, date: String) {

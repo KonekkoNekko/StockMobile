@@ -23,10 +23,13 @@ import com.bielcode.stockmobile.ui.screens.partner.detail.PartnerDetailScreen
 import com.bielcode.stockmobile.ui.screens.partner.entry.PartnerEntryScreen
 import com.bielcode.stockmobile.ui.screens.stock.detail.StockDetailScreen
 import com.bielcode.stockmobile.ui.screens.stock.entry.StockEntryScreen
+import com.bielcode.stockmobile.ui.screens.transaction.marketing.searchaddproduct.SearchAddProductScreen
 import com.bielcode.stockmobile.ui.screens.transaction.marketing.transactionentry.TransactionEntryScreen
 import com.bielcode.stockmobile.ui.screens.utility.barcodescanner.BarcodeScannerScreen
 import com.bielcode.stockmobile.ui.screens.utility.barcodescanner.StockInputScreen
+import com.bielcode.stockmobile.ui.screens.utility.barcodescanner.TransactionStockInputScreen
 import com.bielcode.stockmobile.ui.screens.utility.camera.CameraScreen
+import com.bielcode.stockmobile.ui.screens.utility.documentscanner.DocumentScannerScreen
 import com.bielcode.stockmobile.ui.screens.utility.mapspicker.MapsPickerScreen
 
 @Composable
@@ -187,7 +190,30 @@ fun UserNavigation(
 
             // Transaction
             composable(Screen.TransactionEntry.route){
-                TransactionEntryScreen()
+                TransactionEntryScreen(navController)
+            }
+            
+            composable(Screen.SearchAddProduct.route){
+                SearchAddProductScreen(navController = navController)
+            }
+
+            composable(
+                route = "${Screen.TransactionStockInput.route}/{catalog}/{initSize}",
+                arguments = listOf(
+                    navArgument("catalog") { type = NavType.StringType },
+                    navArgument("initSize") { type = NavType.StringType }
+                )
+            ) { backStackEntry ->
+                val catalog = backStackEntry.arguments?.getString("catalog") ?: ""
+                val initSize = backStackEntry.arguments?.getString("initSize") ?: ""
+                TransactionStockInputScreen(navController, catalog, initSize)
+            }
+            composable(
+                "documentScanner/{transactionCode}",
+                arguments = listOf(navArgument("transactionCode") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val transactionCode = backStackEntry.arguments?.getString("transactionCode") ?: ""
+                DocumentScannerScreen(navController, transactionCode)
             }
         }
     }

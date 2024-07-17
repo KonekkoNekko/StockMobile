@@ -2,6 +2,7 @@
 
 package com.bielcode.stockmobile.ui.screens.utility.barcodescanner
 
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -25,6 +26,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -45,6 +47,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import coil.compose.rememberImagePainter
 import com.bielcode.stockmobile.R
@@ -63,7 +66,8 @@ fun StockInputScreen(
     initSize: String
 ) {
     val context = LocalContext.current
-    val stockInputViewModel: StockInputViewModel = viewModel(factory = ViewModelFactory(Injection.provideRepository(context)))
+    val stockInputViewModel: StockInputViewModel =
+        viewModel(factory = ViewModelFactory(Injection.provideRepository(context)))
     val productDetails by stockInputViewModel.productDetails.collectAsState()
     val isSaving by stockInputViewModel.isSaving.collectAsState()
     val imageUrl by stockInputViewModel.imageUrl.collectAsState()
@@ -80,10 +84,18 @@ fun StockInputScreen(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text(text = "Tambah Stok", style = MaterialTheme.typography.titleMedium) },
+                title = {
+                    Text(
+                        text = "Tambah Stok",
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = { navController.navigateUp() }) {
-                        Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "BackArrow")
+                        Icon(
+                            imageVector = Icons.Default.ArrowBack,
+                            contentDescription = "BackArrow"
+                        )
                     }
                 }
             )
@@ -121,7 +133,10 @@ fun StockInputScreen(
             ) {
                 Column {
                     Text(text = catalog, style = MaterialTheme.typography.titleMedium)
-                    Text(text = productDetails?.productName ?: "", style = MaterialTheme.typography.headlineLarge)
+                    Text(
+                        text = productDetails?.productName ?: "",
+                        style = MaterialTheme.typography.headlineLarge
+                    )
                     Text(text = "Rp. $formattedPrice", style = MaterialTheme.typography.titleLarge)
                 }
 
@@ -207,48 +222,62 @@ fun StockInputScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TransactionStockInputScreen(
+    navController: NavController,
     catalog: String,
-    name: String,
-    price: Int,
-    productQuantities: List<ProductQtyDetail>,
-    initSize: String,
+    initSize: String
 ) {
-    val initialChip =
-        productQuantities.find { it.size == initSize }?.size ?: productQuantities.first().size
-    val selectedChip = remember {
-        mutableStateOf(initialChip)
+    val context = LocalContext.current
+    val viewModel: TransactionStockInputViewModel = viewModel(factory = ViewModelFactory(Injection.provideRepository(context)))
+    val productDetails by viewModel.productDetails.collectAsState()
+    val isSaving by viewModel.isSaving.collectAsState()
+    val imageUrl by viewModel.imageUrl.collectAsState()
+    val productMaxQty: Int = productDetails?.productDetails?.get(initSize)?.stockCurrent ?: 0
+
+    val quantity = remember { mutableStateOf("") }
+    val isQtyValid = quantity.value.toIntOrNull()?.let { it <= productMaxQty } ?: false
+    val submitQty = if (isQtyValid) quantity.value.toInt() else 0
+
+    LaunchedEffect(catalog) {
+        viewModel.fetchProductDetails(catalog)
     }
-    val formattedPrice = price?.let { formatPriceWithDots(it) } ?: ""
 
+    val initialChip = remember { mutableStateOf(initSize) }
 
+    val formattedPrice = productDetails?.productPrice?.let { formatPriceWithDots(it) } ?: ""
 
-    Scaffold(topBar = {
-        CenterAlignedTopAppBar(title = {
-            Text(text = "Tambah Bawaan", style = MaterialTheme.typography.titleMedium)
-        }, navigationIcon = {
-            IconButton(onClick = {}) {
-                Icon(
-                    imageVector = Icons.Default.ArrowBack,
-                    contentDescription = "BackArrow",
-                )
-            }
+    Scaffold(
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = { Text(text = "Tambah Bawaan", style = MaterialTheme.typography.titleMedium) },
+                navigationIcon = {
+                    IconButton(onClick = { navController.navigateUp() }) {
+                        Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "BackArrow")
+                    }
+                }
+            )
         }
-        )
-    }) {
+    ) {
         Column(
             modifier = Modifier
                 .padding(it)
-                .verticalScroll(
-                    rememberScrollState()
-                )
+                .verticalScroll(rememberScrollState())
         ) {
-            Image(
+            imageUrl?.let { uri ->
+                Image(
+                    painter = rememberImagePainter(uri),
+                    contentDescription = "Product Image",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(330.dp),
+                    contentScale = ContentScale.Crop
+                )
+            } ?: Image(
                 painter = painterResource(id = R.drawable.welcome),
                 contentDescription = "",
-                contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(330.dp)
+                    .height(330.dp),
+                contentScale = ContentScale.Crop
             )
             Column(
                 modifier = Modifier
@@ -256,56 +285,96 @@ fun TransactionStockInputScreen(
                 horizontalAlignment = Alignment.Start,
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Column {
-                    Text(text = catalog, style = MaterialTheme.typography.titleMedium)
-                    Text(text = name, style = MaterialTheme.typography.headlineLarge)
-                    Text(
-                        text = "Rp. $formattedPrice",
-                        style = MaterialTheme.typography.titleLarge
-                    )
-                }
+                Text(text = catalog, style = MaterialTheme.typography.titleMedium)
+                Text(
+                    text = productDetails?.productName ?: "",
+                    style = MaterialTheme.typography.headlineLarge
+                )
+                Text(
+                    text = "Rp. $formattedPrice",
+                    style = MaterialTheme.typography.titleLarge
+                )
+
                 Text(text = "Ukuran Produk", style = MaterialTheme.typography.labelLarge)
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                ) {
+                Column(modifier = Modifier.fillMaxWidth()) {
                     FlowRow(
-                        modifier = Modifier
-                            .fillMaxSize(),
+                        modifier = Modifier.fillMaxSize(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.Start)
                     ) {
-                        productQuantities.forEach { item ->
+                        productDetails?.productDetails?.forEach { (size, _) ->
                             FilterChip(
-                                selected = selectedChip.value == item.size,
-                                onClick = {
-                                    selectedChip.value = item.size
-                                },
-                                label = {
-                                    Text(text = item.size)
-                                }
+                                selected = initialChip.value == size,
+                                onClick = { initialChip.value = size },
+                                label = { Text(text = size) }
                             )
                         }
                     }
                 }
-                TextField(
-                    value = "",
-                    onValueChange = {},
-                    placeholder = { Text(text = "Masukkan Kuantitas yang Akan Dikirim") },
-                    label = { Text(text = "Kuantitas Bawaan") },
-                    modifier = Modifier.fillMaxWidth(),
-                )
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(
+                        modifier = Modifier.weight(4f)
+                    ) {
+                        TextField(
+                            value = quantity.value,
+                            onValueChange = { quantity.value = it },
+                            label = { Text(text = "Kuantitas Bawaan") },
+                            placeholder = { Text(text = "Masukkan Kuantitas") },
+                            modifier = Modifier.fillMaxWidth(),
+                            supportingText = {
+                                if (!isQtyValid) {
+                                    Text(text = "Harap jangan melebihi stok yang ada!", color = Color.Red)
+                                }
+                            },
+                            isError = !isQtyValid
+                        )
+                    }
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "/ $productMaxQty",
+                            style = MaterialTheme.typography.headlineSmall
+                        )
+                    }
+                }
+
                 Button(
-                    onClick = {},
+                    onClick = {
+                        if (isQtyValid) {
+                            val newItem = TransactionItem(
+                                isChecked = false,
+                                itemCatalog = catalog,
+                                itemName = productDetails?.productName ?: "",
+                                itemQty = submitQty,
+                                itemSize = initialChip.value
+                            )
+                            viewModel.addTransactionItem(newItem)
+                            navController.navigate(Screen.TransactionEntry.route)
+                        }
+                    },
                     modifier = Modifier
                         .fillMaxWidth(0.8f)
                         .align(Alignment.CenterHorizontally)
                 ) {
-                    Text(text = "Simpan")
+                    if (isSaving) {
+                        CircularProgressIndicator(
+                            color = Color.White,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    } else {
+                        Text(text = "Simpan")
+                    }
                 }
             }
         }
     }
 }
+
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -421,32 +490,6 @@ fun CheckTransactionStockInputScreen(
         }
     }
 }
-//
-//@Preview(showSystemUi = true)
-//@Composable
-//fun PreviewInputBarcodeScreen() {
-//    StockInputScreen(
-//        catalog = "52016", name = "Knee Immobilizer", price = 865000, productQuantities = listOf(
-//            ProductQtyDetail("L", 50,15, 60, 2),
-//            ProductQtyDetail("M", 30,20, 10, 0),
-//            ProductQtyDetail("S", 20,10, 60, 50)
-//        ), initSize = "M"
-//    )
-//}
-
-@Preview(showSystemUi = true)
-@Composable
-fun PreviewTransactionInputBarcodeScreen() {
-    TransactionStockInputScreen(
-        catalog = "52016",
-        name = "Post OP Knee Brace Right",
-        price = 1760000,
-        productQuantities = listOf(
-            ProductQtyDetail("Universal", 20,15, 60, 2)
-        ),
-        initSize = "Universal"
-    )
-}
 
 @Preview(showSystemUi = true)
 @Composable
@@ -456,7 +499,7 @@ fun PreviewCheckTransactionInputBarcodeScreen() {
         name = "Post OP Knee Brace Right",
         price = 1760000,
         productQuantities = listOf(
-            ProductQtyDetail("Universal", 30,15, 60, 2)
+            ProductQtyDetail("Universal", 30, 15, 60, 2)
         ),
         initSize = "Universal",
         supposedQty = 30
