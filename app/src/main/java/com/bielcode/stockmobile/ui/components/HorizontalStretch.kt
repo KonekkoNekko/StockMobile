@@ -224,7 +224,6 @@ fun StockHistoryCard(
     origin: String,
     incoming: Int,
     outgoing: Int,
-    remain: Int
 ) {
     Card(
         colors = CardDefaults.cardColors(
@@ -324,26 +323,26 @@ fun StockHistoryCard(
             }
 
             // End Column
-            Column(
-                modifier = Modifier
-                    .padding(vertical = 4.dp)
-                    .weight(0.5f),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                Column(modifier = Modifier) {
-                    Text(
-                        text = "Sisa",
-                        style = MaterialTheme.typography.bodySmall,
-                        fontSize = 10.sp,
-                        color = Color.Black
-                    )
-                    Text(
-                        text = remain.toString(),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = Color.Black
-                    )
-                }
-            }
+//            Column(
+//                modifier = Modifier
+//                    .padding(vertical = 4.dp)
+//                    .weight(0.5f),
+//                verticalArrangement = Arrangement.spacedBy(6.dp)
+//            ) {
+//                Column(modifier = Modifier) {
+//                    Text(
+//                        text = "Sisa",
+//                        style = MaterialTheme.typography.bodySmall,
+//                        fontSize = 10.sp,
+//                        color = Color.Black
+//                    )
+//                    Text(
+//                        text = remain.toString(),
+//                        style = MaterialTheme.typography.labelMedium,
+//                        color = Color.Black
+//                    )
+//                }
+//            }
         }
     }
 }
@@ -480,7 +479,6 @@ fun PreviewStockHistoryCard() {
             origin = "PT. Sumber Bahagia",
             incoming = 10,
             outgoing = 20,
-            remain = 10
         )
     }
 }

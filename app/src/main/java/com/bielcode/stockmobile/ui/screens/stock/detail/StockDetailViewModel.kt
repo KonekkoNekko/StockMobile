@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.asLiveData
 import androidx.lifecycle.viewModelScope
 import com.bielcode.stockmobile.data.model.Stock
+import com.bielcode.stockmobile.data.model.Transaction
 import com.bielcode.stockmobile.data.preferences.Account
 import com.bielcode.stockmobile.data.repository.Repository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,8 +25,18 @@ class StockDetailViewModel(private val repository: Repository) : ViewModel() {
     private val _isCorrectRole = MutableStateFlow(false)
     val isCorrectRole: StateFlow<Boolean> = _isCorrectRole
 
+    private val _transactions = MutableStateFlow<List<Transaction>>(emptyList())
+    val transactions: StateFlow<List<Transaction>> = _transactions
+
+
+
     init {
         getCurrentRole()
+    }
+    fun fetchTransactionsByCatalog(catalog: String) {
+        viewModelScope.launch {
+            _transactions.value = repository.getTransactionsByCatalog(catalog)
+        }
     }
     fun fetchProductDetails(catalog: String) {
         Log.d("StockDetailViewModel", "Fetching product details for catalog: $catalog")

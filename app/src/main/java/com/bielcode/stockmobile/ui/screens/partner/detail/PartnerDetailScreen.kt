@@ -79,6 +79,8 @@ fun PartnerDetailScreen(
         viewModel(factory = ViewModelFactory(Injection.provideRepository(context)))
     val partnerDetails by partnerDetailViewModel.partnerDetails.collectAsState()
     val imageUrl by partnerDetailViewModel.imageUrl.collectAsState()
+    val transactions by partnerDetailViewModel.transactions.collectAsState()
+    val products by partnerDetailViewModel.products.collectAsState()
 
     LaunchedEffect(name) {
         Log.d("PartnerDetailScreen", "Launching effect for $name")
@@ -283,17 +285,12 @@ fun PartnerDetailScreen(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    val products = listOf(
-                        ProductItemSizeOwnStts("Knee Immobilizer", "Universal", 50, "Konsinyasi"),
-                        ProductItemSizeOwnStts("Knee Immobilizer", "Universal", 50, "Konsinyasi"),
-                        ProductItemSizeOwnStts("Knee Immobilizer", "Universal", 50, "Konsinyasi")
-                    )
                     products.forEach { product ->
                         ProductCard_SizeOwnStats(
                             name = product.name,
                             size = product.size,
                             own = product.owned,
-                            status = product.status
+                            status = product.status,
                         )
                     }
                 }
@@ -305,26 +302,12 @@ fun PartnerDetailScreen(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    val transactions = listOf(
-                        TransactionSimplified(
-                            "TRX001",
-                            qty = 100,
-                            type = "Penjualan",
-                            date = "01-07-2024"
-                        ),
-                        TransactionSimplified(
-                            "TRX002",
-                            qty = 150,
-                            type = "Pembelian",
-                            date = "02-07-2024"
-                        )
-                    )
                     transactions.forEach { transaction ->
                         TransactionSimplefiedCard(
-                            code = transaction.code,
-                            qty = transaction.qty,
-                            type = transaction.type,
-                            date = transaction.date
+                            code = transaction.transactionCode,
+                            qty = transaction.transactionItems.values.sumOf { it.itemQty },
+                            type = transaction.transactionType,
+                            date = transaction.transactionDate?.toString() ?: ""
                         )
                     }
                 }

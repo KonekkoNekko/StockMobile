@@ -1,5 +1,6 @@
 package com.bielcode.stockmobile.ui.components
 
+import android.util.Log
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -22,15 +23,25 @@ import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.bielcode.stockmobile.ui.theme.WhiteFEF7FF
+import com.google.firebase.storage.FirebaseStorage
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
 @Composable
 fun PartnerCard(name: String, total: Int, status: List<String>) {
@@ -43,6 +54,15 @@ fun PartnerCard(name: String, total: Int, status: List<String>) {
             .size(width = 300.dp, height = 150.dp),
         border = BorderStroke(1.dp, Color.Cyan)
     ) {
+//        val context = LocalContext.current
+        val coroutineScope = rememberCoroutineScope()
+        var imageUrl by remember { mutableStateOf<String?>(null) }
+
+        LaunchedEffect(name) {
+            coroutineScope.launch {
+                imageUrl = getImageUrlFromFirebase("partners", "name", "jpg")
+            }
+        }
         Row {
             Column(
                 modifier = Modifier
@@ -127,7 +147,15 @@ fun PartnerCard(name: String, total: Int, status: List<String>) {
 }
 
 @Composable
-fun ProductCard_SizeQty(name: String, size: String, qty: Int) {
+fun ProductCard_SizeQty(name: String, size: String, qty: Int, catalog: String) {
+    val coroutineScope = rememberCoroutineScope()
+    var imageUrl by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(name) {
+        coroutineScope.launch {
+            imageUrl = getImageUrlFromFirebase("images", catalog, "png")
+        }
+    }
     Card(
         colors = CardDefaults.cardColors(
             containerColor = WhiteFEF7FF,
@@ -144,7 +172,7 @@ fun ProductCard_SizeQty(name: String, size: String, qty: Int) {
                     .fillMaxHeight()
             ) {
                 AsyncImage(
-                    model = "https://placehold.co/100x200.png",
+                    model = imageUrl,
                     contentDescription = "Partner Photo",
                     contentScale = ContentScale.Fit,
                     modifier = Modifier
@@ -236,7 +264,7 @@ fun ProductCard_SizeOwnStats(name: String, size: String, own: Int, status: Strin
                     .fillMaxHeight()
             ) {
                 AsyncImage(
-                    model = "https://placehold.co/100x200.png",
+                    model = "",
                     contentDescription = "Partner Photo",
                     contentScale = ContentScale.Fit,
                     modifier = Modifier
@@ -442,8 +470,17 @@ fun ProductCard_SizeQtyChk(
     size: String,
     qty: Int,
     checked: Boolean = false,
-    onIconClick: () -> Unit
+    onIconClick: () -> Unit,
+    catalog: String
 ) {
+    val coroutineScope = rememberCoroutineScope()
+    var imageUrl by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(name) {
+        coroutineScope.launch {
+            imageUrl = getImageUrlFromFirebase("images", catalog, "png")
+        }
+    }
     Card(
         colors = CardDefaults.cardColors(
             containerColor = WhiteFEF7FF,
@@ -460,7 +497,7 @@ fun ProductCard_SizeQtyChk(
                     .fillMaxHeight()
             ) {
                 AsyncImage(
-                    model = "https://placehold.co/100x200.png",
+                    model = imageUrl,
                     contentDescription = "Partner Photo",
                     contentScale = ContentScale.Fit,
                     modifier = Modifier
@@ -576,67 +613,77 @@ fun ProductCard_SizeQtyChk(
         }
     }
 }
+//
+//@Preview(showBackground = true)
+//@Composable
+//fun PreviewPartnerCard() {
+//    MaterialTheme {
+//        PartnerCard(
+//            name = "Partner A",
+//            total = 5,
+//            status = listOf("Client", "Consignment")
+//        )
+//    }
+//}
+//
+//@Preview(showBackground = true)
+//@Composable
+//fun PreviewProductCard_SizeQty() {
+//    MaterialTheme {
+//        ProductCard_SizeQty(
+//            name = "Knee Immobilizer",
+//            size = "M",
+//            qty = 50
+//        )
+//    }
+//}
+//
+//@Preview(showBackground = true)
+//@Composable
+//fun PreviewProductCard_SizeOwnStats() {
+//    MaterialTheme {
+//        ProductCard_SizeOwnStats(
+//            name = "Knee Brace",
+//            size = "L",
+//            own = 15,
+//            status = "Available"
+//        )
+//    }
+//}
+//
+//@Preview(showBackground = true)
+//@Composable
+//fun PreviewProductCard_SizeSldAvail() {
+//    MaterialTheme {
+//        ProductCard_SizeSldAvail(
+//            name = "Ankle Support",
+//            size = "S",
+//            sold = 10,
+//            available = 30
+//        )
+//    }
+//}
+//
+//@Preview(showBackground = true)
+//@Composable
+//fun PreviewProductCard_SizeQtyChk() {
+//    MaterialTheme {
+//        ProductCard_SizeQtyChk(
+//            name = "Knee Immobilizer",
+//            size = "M",
+//            qty = 50,
+//            checked = false,
+//            onIconClick = {},
+//        )
+//    }
+//}
 
-@Preview(showBackground = true)
-@Composable
-fun PreviewPartnerCard() {
-    MaterialTheme {
-        PartnerCard(
-            name = "Partner A",
-            total = 5,
-            status = listOf("Client", "Consignment")
-        )
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun PreviewProductCard_SizeQty() {
-    MaterialTheme {
-        ProductCard_SizeQty(
-            name = "Knee Immobilizer",
-            size = "M",
-            qty = 50
-        )
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun PreviewProductCard_SizeOwnStats() {
-    MaterialTheme {
-        ProductCard_SizeOwnStats(
-            name = "Knee Brace",
-            size = "L",
-            own = 15,
-            status = "Available"
-        )
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun PreviewProductCard_SizeSldAvail() {
-    MaterialTheme {
-        ProductCard_SizeSldAvail(
-            name = "Ankle Support",
-            size = "S",
-            sold = 10,
-            available = 30
-        )
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun PreviewProductCard_SizeQtyChk() {
-    MaterialTheme {
-        ProductCard_SizeQtyChk(
-            name = "Knee Immobilizer",
-            size = "M",
-            qty = 50,
-            checked = false,
-            onIconClick = {},
-        )
+suspend fun getImageUrlFromFirebase(folder: String, filename: String, extension: String): String? {
+    return try {
+        val storageRef = FirebaseStorage.getInstance().reference.child("$folder/$filename.$extension")
+        storageRef.downloadUrl.await().toString()
+    } catch (e: Exception) {
+        Log.e("Firebase", "Error fetching image URL", e)
+        null
     }
 }

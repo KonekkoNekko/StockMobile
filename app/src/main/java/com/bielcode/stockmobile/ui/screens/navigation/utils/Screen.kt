@@ -31,6 +31,7 @@ sealed class Screen(
     data object TransactionEntry : Screen("transactionEntry")
     data object SearchAddProduct : Screen("searchAddProduct")
     data object TransactionStockInput : Screen("transactionStockInput")
+    data object TransactionDeliveryConfirm : Screen("transactionDeliveryConfirm")
 
 }
 

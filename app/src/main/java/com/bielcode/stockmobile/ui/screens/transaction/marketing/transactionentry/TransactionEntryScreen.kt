@@ -187,6 +187,7 @@ fun TransactionEntryScreen(
             if (transactionCode == null) {
                 Text(text = "Tambah Transaksi Baru", style = MaterialTheme.typography.titleMedium)
             } else {
+                Log.d("TransactionEntryScreen", "transactionCode: $transactionCode")
                 Text(text = "Edit Transaksi Baru", style = MaterialTheme.typography.titleMedium)
             }
         }, navigationIcon = {

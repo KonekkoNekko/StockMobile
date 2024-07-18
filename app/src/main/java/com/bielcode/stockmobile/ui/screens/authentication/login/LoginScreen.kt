@@ -203,11 +203,3 @@ fun LoginScreen(
         }
     }
 }
-
-@Preview(showBackground = true, showSystemUi = true)
-@Composable
-fun LoginScreenPreview() {
-    StockMobileTheme {
-        LoginScreen(toRegister = {})
-    }
-}

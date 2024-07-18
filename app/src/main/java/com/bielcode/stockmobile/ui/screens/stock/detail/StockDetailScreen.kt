@@ -7,6 +7,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -49,10 +50,11 @@ fun StockDetailScreen(
     val productDetails by stockDetailViewModel.productDetails.collectAsState()
     val imageUrl by stockDetailViewModel.imageUrl.collectAsState()
     val correctRole by stockDetailViewModel.isCorrectRole.collectAsState()
+    val transactions by stockDetailViewModel.transactions.collectAsState()
 
     LaunchedEffect(catalog) {
-        Log.d("StockDetailScreen", "Launching effect for catalog: $catalog")
         stockDetailViewModel.fetchProductDetails(catalog)
+        stockDetailViewModel.fetchTransactionsByCatalog(catalog)
     }
 
     if (productDetails == null) {
@@ -74,7 +76,7 @@ fun StockDetailScreen(
             floatingActionButton = {
                 if (correctRole) {
                     FloatingActionButton(onClick = {
-                        navController.navigate("barcodeScanner/${productDetails?.productCatalog}")
+                        navController.navigate("barcodeScanner/${productDetails?.productCatalog}/${selectedChip.value}")
                     }) {
                         Icon(imageVector = Icons.Default.Input, contentDescription = "Stock Input")
                     }
@@ -291,7 +293,7 @@ fun StockDetailScreen(
                         val cameraPositionState = rememberCameraPositionState {
                             position = CameraPosition.fromLatLngZoom(
                                 LatLng(
-                                    0.0, 0.0
+                                    -7.2585614250219015, 112.74837128938759
                                 ), 12f
                             )
                         }
@@ -303,12 +305,14 @@ fun StockDetailScreen(
                                 modifier = Modifier.fillMaxSize(),
                                 cameraPositionState = cameraPositionState
                             ) {
-                                productDetails?.productDetails?.forEach {
-                                    Marker(
-                                        state = MarkerState(position = LatLng(0.0, 0.0)),
-                                        title = it.key,
-                                        tag = it.key
-                                    )
+                                transactions.forEach { transaction ->
+                                    transaction.transactionCoordination?.let { coord ->
+                                        Marker(
+                                            state = MarkerState(position = LatLng(coord.latitude, coord.longitude)),
+                                            title = transaction.transactionCode,
+                                            snippet = transaction.transactionAddress
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -320,19 +324,18 @@ fun StockDetailScreen(
                             style = MaterialTheme.typography.titleMedium
                         )
                     }
-                    items(count = 10) {
+                    items(transactions) { transaction ->
                         Row(
                             modifier = Modifier
                                 .fillMaxSize(),
                             horizontalArrangement = Arrangement.Center
                         ) {
                             StockHistoryCard(
-                                code = "TRX-SLD-123",
-                                date = "15/06/2023",
-                                origin = "RS. Ortopedi & Traumalogi",
-                                incoming = 0,
-                                outgoing = 20,
-                                remain = 50
+                                code = transaction.transactionCode,
+                                date = transaction.transactionDate?.toString() ?: "",
+                                origin = transaction.transactionAddress,
+                                incoming = if (transaction.transactionType == "in") transaction.transactionItems.values.sumOf { it.itemQty } else 0,
+                                outgoing = if (transaction.transactionType == "out") transaction.transactionItems.values.sumOf { it.itemQty } else 0,
                             )
                         }
                     }

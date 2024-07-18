@@ -51,7 +51,7 @@ fun BarcodeScannerScreen(
                             if (itemSize.isNotEmpty() && itemQty != 0 && transactionCode.isNotEmpty()) {
                                 navController.navigate("checkTransactionStockInput/${catalog}/${itemSize}/${itemQty}/${transactionCode}")
                             } else {
-                                navController.navigate("stockInput/$it/defaultSize")
+                                navController.navigate("stockInput/$it/$itemSize")
                             }
 
                         } else {

@@ -2,6 +2,7 @@ package com.bielcode.stockmobile.data.repository
 
 import android.net.Uri
 import android.util.Log
+import com.bielcode.stockmobile.data.ProductItemSizeOwnStts
 import com.bielcode.stockmobile.data.model.Contact
 import com.bielcode.stockmobile.data.model.Partner
 import com.bielcode.stockmobile.data.model.PartnerType
@@ -148,28 +149,83 @@ class Repository private constructor(
         }
     }
 
-    suspend fun saveTransaction(
+    suspend fun decreaseStock(catalog: String, size: String, quantity: Int) {
+        try {
+            val documentRef = firestore.collection("stocks").document(catalog)
+            val snapshot = documentRef.get().await()
+            val stock = snapshot.toObject(Stock::class.java)
+
+            stock?.let {
+                val productDetail = it.productDetails[size]
+                if (productDetail != null) {
+                    val updatedProductDetail = productDetail.copy(
+                        stockCurrent = productDetail.stockCurrent - quantity
+                    )
+                    val updatedProductDetails = it.productDetails.toMutableMap()
+                    updatedProductDetails[size] = updatedProductDetail
+                    val updatedStock = it.copy(productDetails = updatedProductDetails)
+
+                    documentRef.set(updatedStock).await()
+                } else {
+                    Log.e("Repository", "Product detail for size $size not found")
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("Repository", "Error decreasing stock", e)
+        }
+    }
+
+    suspend fun increaseStock(catalog: String, size: String, quantity: Int) {
+        try {
+            val documentRef = firestore.collection("stocks").document(catalog)
+            val snapshot = documentRef.get().await()
+            val stock = snapshot.toObject(Stock::class.java)
+
+            stock?.let {
+                val productDetail = it.productDetails[size]
+                if (productDetail != null) {
+                    val updatedProductDetail = productDetail.copy(
+                        stockCurrent = productDetail.stockCurrent + quantity
+                    )
+                    val updatedProductDetails = it.productDetails.toMutableMap()
+                    updatedProductDetails[size] = updatedProductDetail
+                    val updatedStock = it.copy(productDetails = updatedProductDetails)
+
+                    documentRef.set(updatedStock).await()
+                } else {
+                    Log.e("Repository", "Product detail for size $size not found")
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("Repository", "Error increasing stock", e)
+        }
+    }
+
+
+
+    suspend fun saveTransactionInput(
         transactionItems: Map<String, TransactionItem>,
         destination: String,
         type: String
     ) {
+        val code = "IN-${transactionItems.values.first().itemCatalog}-${transactionItems.values.first().itemSize}-1"
         val transactionData = mapOf(
             "transactionDestination" to destination,
             "transactionItems" to transactionItems,
             "transactionType" to type,
             "transactionDate" to com.google.firebase.Timestamp.now(), // Add timestamp
-            "transactionCode" to "IN-${transactionItems.values.first().itemCatalog}-${transactionItems.values.first().itemSize}-1", // Example code generation
+            "transactionCode" to code, // Example code generation
             "transactionAddress" to "", // Add other fields as necessary
             "transactionContact" to mapOf<String, Any>(), // Example empty map for contact
             "transactionCoordination" to com.google.firebase.firestore.GeoPoint(
-                0.0,
-                0.0
-            ), // Example geolocation
+                -7.2933377,
+                112.7830526
+            ),
             "transactionDocumentUrl" to "", // Example document URL
             "transactionDocumentationUrl" to "", // Example documentation URL
             "transactionPhone" to "" // Example phone number
         )
-        firestore.collection("transactions").add(transactionData).await()
+        firestore.collection("transactions").document(code).set(transactionData).await()
     }
 
     suspend fun saveProduct(stock: Stock) {
@@ -407,6 +463,58 @@ class Repository private constructor(
         } catch (e: Exception) {
             Log.e("Repository", "Error fetching transactions", e)
             emptyList()
+        }
+    }
+
+    suspend fun getTransactionsByCatalog(catalog: String): List<Transaction> {
+        return try {
+            val snapshot = firestore.collection("transactions")
+                .whereEqualTo("transactionItems.$catalog.itemCatalog", catalog)
+                .get().await()
+            snapshot.documents.mapNotNull { it.toTransaction() }
+        } catch (e: Exception) {
+            Log.e("Repository", "Error fetching transactions by catalog", e)
+            emptyList()
+        }
+    }
+
+    suspend fun getTransactionsByPartner(partnerName: String): List<Transaction> {
+        return try {
+            val snapshot = firestore.collection("transactions")
+                .whereEqualTo("transactionDestination", partnerName)
+                .get().await()
+            snapshot.documents.mapNotNull { it.toTransaction() }
+        } catch (e: Exception) {
+            Log.e("Repository", "Error fetching transactions by partner", e)
+            emptyList()
+        }
+    }
+
+    suspend fun getProductsByPartner(partnerName: String): List<ProductItemSizeOwnStts> {
+        return try {
+            val snapshot = firestore.collection("products")
+                .whereEqualTo("partnerName", partnerName)
+                .get().await()
+            snapshot.documents.mapNotNull { document ->
+                document.toProductItemSizeOwnStts()
+            }
+        } catch (e: Exception) {
+            Log.e("Repository", "Error fetching products by partner", e)
+            emptyList()
+        }
+    }
+
+    private fun DocumentSnapshot.toProductItemSizeOwnStts(): ProductItemSizeOwnStts? {
+        return try {
+            ProductItemSizeOwnStts(
+                name = this.getString("name") ?: "",
+                size = this.getString("size") ?: "",
+                owned = (this.getLong("owned") ?: 0).toInt(),
+                status = this.getString("status") ?: ""
+            )
+        } catch (e: Exception) {
+            Log.e("Repository", "Error mapping ProductItemSizeOwnStts", e)
+            null
         }
     }
 

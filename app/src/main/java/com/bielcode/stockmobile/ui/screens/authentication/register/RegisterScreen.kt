@@ -60,7 +60,8 @@ fun RegisterScreen(
     toLogin: () -> Unit
 ) {
     val context = LocalContext.current
-    val registerViewModel: RegisterViewModel = viewModel(factory = ViewModelFactory(Injection.provideRepository(context)))
+    val registerViewModel: RegisterViewModel =
+        viewModel(factory = ViewModelFactory(Injection.provideRepository(context)))
     val registerSuccess by registerViewModel.registerSuccess.collectAsState()
     val registerError by registerViewModel.registerError.collectAsState()
 
@@ -73,6 +74,13 @@ fun RegisterScreen(
     var expand by remember { mutableStateOf(false) }
     var selected by remember { mutableStateOf(division[0]) }
     var passwordVisible = rememberSaveable { mutableStateOf(false) }
+    val isEmailValid =
+        email.isNotEmpty() && android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()
+    val isPasswordValid = password.length >= 6
+    val isPhoneValid = phone.isNotEmpty()
+    val isNameValid = name.isNotEmpty()
+    val isDivisionValid = selected.isNotEmpty()
+
 
     Box(
         modifier = Modifier
@@ -109,12 +117,20 @@ fun RegisterScreen(
                             contentDescription = "name Icon"
                         )
                     },
-                    onValueChange = { name = it},
+                    onValueChange = { name = it },
                     label = { Text(text = "Nama Lengkap") },
                     placeholder = { Text(text = "Masukkan nama Anda") },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 8.dp)
+                        .padding(vertical = 8.dp),
+                    supportingText = {
+                        if (name.isEmpty()) {
+                            Text(text = "Harap tidak mengosongi kolom nama!", color = Color.Red)
+                        } else {
+                            Text(text = "")
+                        }
+                    },
+                    isError = !isNameValid && name.isNotEmpty(),
                 )
                 TextField(
                     value = phone,
@@ -125,12 +141,20 @@ fun RegisterScreen(
                         )
                     },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    onValueChange = {phone = it},
+                    onValueChange = { phone = it },
                     label = { Text(text = "Nomor Telepon") },
                     placeholder = { Text(text = "Masukkan Nomor Telepon Anda") },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 8.dp)
+                        .padding(vertical = 8.dp),
+                    supportingText = {
+                        if (phone.isEmpty()) {
+                            Text(text = "Harap tidak mengosongi kolom nama!", color = Color.Red)
+                        } else {
+                            Text(text = "")
+                        }
+                    },
+                    isError = !isPhoneValid && phone.isNotEmpty(),
                 )
                 TextField(
                     value = email,
@@ -140,12 +164,22 @@ fun RegisterScreen(
                             contentDescription = "email Icon"
                         )
                     },
-                    onValueChange = {email = it},
+                    onValueChange = { email = it },
                     label = { Text(text = "Email") },
                     placeholder = { Text(text = "Masukkan e-mail Anda") },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 8.dp)
+                        .padding(vertical = 8.dp),
+                    supportingText = {
+                        if (!isEmailValid && email.isNotEmpty()) {
+                            Text(text = "Harap masukkan email yang valid!", color = Color.Red)
+                        } else if (email.isEmpty()) {
+                            Text(text = "Harap tidak mengosongi kolom email!", color = Color.Red)
+                        } else {
+                            Text(text = "")
+                        }
+                    },
+                    isError = !isEmailValid && email.isNotEmpty(),
                 )
                 TextField(
                     value = password,
@@ -167,14 +201,24 @@ fun RegisterScreen(
                             Icon(imageVector = image, description)
                         }
                     },
-                    onValueChange = {password = it},
+                    onValueChange = { password = it },
                     visualTransformation = if (passwordVisible.value) VisualTransformation.None else PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                     label = { Text(text = "Password") },
                     placeholder = { Text(text = "Masukkan Password Anda") },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 8.dp)
+                        .padding(vertical = 8.dp),
+                    supportingText = {
+                        if (!isPasswordValid && password.isNotEmpty()) {
+                            Text(text = "Password harus minimal 6 karakter", color = Color.Red)
+                        } else if (password.isEmpty()) {
+                            Text(text = "Harap tidak mengosongi kolom password!", color = Color.Red)
+                        } else {
+                            Text(text = "")
+                        }
+                    },
+                    isError = !isPasswordValid && password.isNotEmpty(),
                 )
                 ExposedDropdownMenuBox(
                     expanded = expand,
@@ -196,7 +240,8 @@ fun RegisterScreen(
                         label = { Text(text = "Pilih Bagian Anda") },
                         readOnly = true,
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expand) },
-                        modifier = Modifier.menuAnchor()
+                        modifier = Modifier
+                            .menuAnchor()
                             .fillMaxWidth()
                     )
                     ExposedDropdownMenu(
@@ -207,7 +252,12 @@ fun RegisterScreen(
                     ) {
                         division.forEach { item ->
                             DropdownMenuItem(
-                                text = { Text(text = item, style = MaterialTheme.typography.bodyLarge) },
+                                text = {
+                                    Text(
+                                        text = item,
+                                        style = MaterialTheme.typography.bodyLarge
+                                    )
+                                },
                                 onClick = {
                                     selected = item
                                     expand = false
@@ -222,7 +272,11 @@ fun RegisterScreen(
 
                 Button(
                     onClick = {
-                        registerViewModel.register(email, password, Account(email, name, phone, selected))
+                        registerViewModel.register(
+                            email,
+                            password,
+                            Account(email, name, phone, selected)
+                        )
                     },
                     modifier = Modifier
                         .fillMaxWidth(0.8f)
@@ -242,13 +296,5 @@ fun RegisterScreen(
 
     registerError?.let { error ->
         Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
-    }
-}
-
-@Preview(showBackground = true, showSystemUi = true)
-@Composable
-fun RegisterScreenPreview() {
-    Surface {
-        RegisterScreen(toLogin = {})
     }
 }

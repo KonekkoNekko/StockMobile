@@ -23,6 +23,7 @@ import com.bielcode.stockmobile.ui.screens.partner.detail.PartnerDetailScreen
 import com.bielcode.stockmobile.ui.screens.partner.entry.PartnerEntryScreen
 import com.bielcode.stockmobile.ui.screens.stock.detail.StockDetailScreen
 import com.bielcode.stockmobile.ui.screens.stock.entry.StockEntryScreen
+import com.bielcode.stockmobile.ui.screens.transaction.gudang.transactiondeliveryconfirm.TransactionDeliveryConfirmScreen_Delivery
 import com.bielcode.stockmobile.ui.screens.transaction.transactiondetail.TransactionDetailScreen
 import com.bielcode.stockmobile.ui.screens.transaction.transactiondetail.TransactionDetailScreen_Delivery
 import com.bielcode.stockmobile.ui.screens.transaction.marketing.searchaddproduct.SearchAddProductScreen
@@ -88,13 +89,15 @@ fun UserNavigation(
                     navController = navController
                 )
             }
-            composable("barcodeScanner/{catalog}",
+            composable("barcodeScanner/{catalog}/{itemSize}",
                 arguments = listOf(
-                    navArgument("catalog"){ type = NavType.StringType }
+                    navArgument("catalog"){ type = NavType.StringType },
+                    navArgument("itemSize") { type = NavType.StringType },
                 )
             ) {backStackEntry ->
                 val catalog = backStackEntry.arguments?.getString("catalog") ?: ""
-                BarcodeScannerScreen(navController, catalog, "", 0, "")
+                val itemSize = backStackEntry.arguments?.getString("itemSize") ?: ""
+                BarcodeScannerScreen(navController, catalog, itemSize, 0, "")
             }
             composable(
                 "barcodeScanner/{catalog}/{itemSize}/{itemQty}/{transactionCode}",
@@ -287,6 +290,15 @@ fun UserNavigation(
             ) { backStackEntry ->
                 val transactionCode = backStackEntry.arguments?.getString("transactionCode")
                 TransactionEntryScreen(navController, transactionCode)
+            }
+            composable(
+                route = "${Screen.TransactionDeliveryConfirm.route}/{transactionCode}",
+                arguments = listOf(
+                    navArgument("transactionCode") { type = NavType.StringType; nullable = true }
+                )
+            ) { backStackEntry ->
+                val transactionCode = backStackEntry.arguments?.getString("transactionCode") ?: ""
+                TransactionDeliveryConfirmScreen_Delivery(navController, transactionCode)
             }
 
         }

@@ -5,10 +5,15 @@
 
 package com.bielcode.stockmobile.ui.screens.transaction.transactiondetail
 
+import android.annotation.SuppressLint
+import android.content.Context
 import android.content.Intent
+import android.location.Location
 import android.net.Uri
 import android.util.Log
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -41,9 +46,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -55,13 +62,25 @@ import com.bielcode.stockmobile.ui.components.ContactCard_Call
 import com.bielcode.stockmobile.ui.components.DialogWindow
 import com.bielcode.stockmobile.ui.components.ProductCard_SizeQty
 import com.bielcode.stockmobile.ui.components.ProductCard_SizeQtyChk
+import com.bielcode.stockmobile.ui.screens.navigation.utils.Screen
+import com.bielcode.stockmobile.ui.screens.partner.detail.openGoogleMaps
 import com.bielcode.stockmobile.ui.screens.utility.formatDateString
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
+import com.google.maps.android.compose.Circle
 import com.google.maps.android.compose.GoogleMap
+import com.google.maps.android.compose.MapProperties
+import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -255,7 +274,8 @@ fun TransactionDetailScreen(
                                     ProductCard_SizeQty(
                                         name = product.itemName,
                                         size = product.itemSize,
-                                        qty = product.itemQty
+                                        qty = product.itemQty,
+                                        catalog = product.itemCatalog
                                     )
                                 }
                             }
@@ -308,15 +328,63 @@ fun TransactionDetailScreen_Delivery(
     transactionCode: String
 ) {
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
     val viewModel: TransactionDetailViewModel = viewModel(
         factory = ViewModelFactory(Injection.provideRepository(context))
     )
 
     val transaction by viewModel.transactionDetail.collectAsStateWithLifecycle()
     var showDialog by remember { mutableStateOf(false) }
+    var isWithinGeofence by remember { mutableStateOf(false) }
+    var userLocation by remember { mutableStateOf(LatLng(0.0, 0.0)) }
+    var hasLocationPermission by remember { mutableStateOf(false) }
+
+    val locationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+        onResult = { isGranted ->
+            hasLocationPermission = isGranted
+        }
+    )
 
     LaunchedEffect(transactionCode) {
         viewModel.fetchTransactionDetail(transactionCode)
+    }
+
+    LaunchedEffect(Unit) {
+        // Request location permission
+        locationPermissionLauncher.launch(android.Manifest.permission.ACCESS_FINE_LOCATION)
+    }
+
+    // Function to check if the user is within the geofence
+    fun checkGeofence(userLocation: LatLng, geofenceCenter: LatLng, radius: Double): Boolean {
+        val results = FloatArray(1)
+        Location.distanceBetween(
+            userLocation.latitude, userLocation.longitude,
+            geofenceCenter.latitude, geofenceCenter.longitude, results
+        )
+        return results[0] < radius
+    }
+
+    if (hasLocationPermission) {
+        LaunchedEffect(Unit) {
+            // Get user's current location
+            coroutineScope.launch {
+                while (true) {
+                    getCurrentLocation(fusedLocationClient)?.let { location ->
+                        userLocation = LatLng(location.latitude, location.longitude)
+                        val geofenceCenter = LatLng(
+                            transaction?.transactionCoordination?.latitude ?: 0.0,
+                            transaction?.transactionCoordination?.longitude ?: 0.0
+                        )
+                        isWithinGeofence = checkGeofence(userLocation, geofenceCenter, 50.0)
+                        Log.d("TransactionDetailScreen_Delivery", "User location: $userLocation, within geofence: $isWithinGeofence")
+                    }
+                    delay(5000) // Update location every 5 seconds
+                }
+            }
+        }
+    } else {
     }
 
     Scaffold(topBar = {
@@ -461,7 +529,8 @@ fun TransactionDetailScreen_Delivery(
                                         onIconClick = {
                                             // Navigasi ke barcode scanner dengan membawa item Catalog, itemSize, itemQty, dan transactionCode
                                             navController.navigate("barcodeScanner/${product.itemCatalog}/${product.itemSize}/${product.itemQty}/${transactionCode}")
-                                        }
+                                        },
+                                        catalog = product.itemCatalog
                                     )
                                 }
 
@@ -478,7 +547,7 @@ fun TransactionDetailScreen_Delivery(
                                 LatLng(
                                     transactionItem.transactionCoordination?.latitude ?: 0.0,
                                     transactionItem.transactionCoordination?.longitude ?: 0.0
-                                ), 12f
+                                ), 25f
                             )
                         }
 
@@ -487,17 +556,38 @@ fun TransactionDetailScreen_Delivery(
                         ) {
                             GoogleMap(
                                 modifier = Modifier.fillMaxSize(),
-                                cameraPositionState = cameraPositionState
+                                cameraPositionState = cameraPositionState,
+                                properties = MapProperties(
+                                    isBuildingEnabled = true,
+                                    isMyLocationEnabled = true,
+                                    isTrafficEnabled = true,
+                                    isIndoorEnabled = true,
+                                ),
+                                uiSettings = MapUiSettings(
+                                    compassEnabled = true,
+                                    mapToolbarEnabled = true,
+                                    indoorLevelPickerEnabled = true,
+                                    myLocationButtonEnabled = true,
+                                ),
                             ) {
+                                val destinationLatLng = LatLng(
+                                    transactionItem.transactionCoordination?.latitude ?: 0.0,
+                                    transactionItem.transactionCoordination?.longitude ?: 0.0
+                                )
+
                                 Marker(
                                     state = MarkerState(
-                                        position = LatLng(
-                                            transactionItem.transactionCoordination?.latitude ?: 0.0,
-                                            transactionItem.transactionCoordination?.longitude ?: 0.0
-                                        )
+                                        position = destinationLatLng
                                     ),
                                     title = transactionItem.transactionDestination,
                                     tag = transactionItem.transactionDestination
+                                )
+
+                                Circle(
+                                    center = destinationLatLng,
+                                    radius = 50.0,
+                                    strokeColor = Color.Red,
+                                    strokeWidth = 2f
                                 )
                             }
                         }
@@ -508,7 +598,15 @@ fun TransactionDetailScreen_Delivery(
                                 if (allUnchecked) {
                                     showDialog = true
                                 } else {
-                                    // Handle start delivery action
+                                    val name = transactionItem?.transactionDestination
+                                    transactionItem?.transactionCoordination?.let { coordinate ->
+                                        openGoogleMapsNavigation(
+                                            context,
+                                            coordinate.latitude,
+                                            coordinate.longitude,
+                                            name
+                                        )
+                                    }
                                 }
                             },
                             modifier = Modifier
@@ -522,22 +620,18 @@ fun TransactionDetailScreen_Delivery(
                             Text(text = "Mulai Pengiriman")
                         }
 
-                        if (showDialog) {
-                            DialogWindow(
-                                titleText = "Validasi Pengiriman",
-                                contentText = "Item harus dicek terlebih dahulu!",
-                                confirmText = "OK",
-                                dismissText = "Batal",
-                                clickConfirm = { showDialog = false },
-                                clickDismiss = { showDialog = false }
-                            )
-                        }
-
                         Button(
-                            onClick = {},
+                            onClick = {
+                                if (isWithinGeofence) {
+                                    navController.navigate("${Screen.TransactionDeliveryConfirm.route}/${transactionCode}")
+                                } else {
+                                    showDialog = true
+                                }
+                            },
                             modifier = Modifier
                                 .fillMaxWidth(0.8f)
-                                .align(Alignment.CenterHorizontally)
+                                .align(Alignment.CenterHorizontally),
+                            enabled = isWithinGeofence
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Checklist,
@@ -546,9 +640,44 @@ fun TransactionDetailScreen_Delivery(
                             Text(text = "Konfirmasi Pengiriman")
                         }
 
+                        if (showDialog) {
+                            DialogWindow(
+                                titleText = "Validasi Pengiriman",
+                                contentText = "Anda harus berada dalam radius 10 meter untuk memulai pengiriman.",
+                                clickConfirm = {
+                                    showDialog = false
+                                    navController.popBackStack()
+                                },
+                                clickDismiss = {},
+                                confirmText = "OK",
+                                dismissText = ""
+                            )
+                        }
                     }
                 }
             }
         }
+    }
+}
+
+@SuppressLint("MissingPermission")
+suspend fun getCurrentLocation(fusedLocationClient: FusedLocationProviderClient): android.location.Location? {
+    return withContext(Dispatchers.IO) {
+        try {
+            val locationResult = fusedLocationClient.lastLocation
+            locationResult.await()
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+}
+
+fun openGoogleMapsNavigation(context: Context, latitude: Double, longitude: Double, label: String?) {
+    val uri = Uri.parse("google.navigation:q=$latitude,$longitude($label)")
+    val intent = Intent(Intent.ACTION_VIEW, uri)
+    intent.setPackage("com.google.android.apps.maps")
+    if (intent.resolveActivity(context.packageManager) != null) {
+        context.startActivity(intent)
     }
 }

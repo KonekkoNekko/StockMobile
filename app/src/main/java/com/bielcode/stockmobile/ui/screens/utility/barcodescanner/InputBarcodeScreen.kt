@@ -200,6 +200,7 @@ fun StockInputScreen(
                             "$destination $save_description",
                             "Masuk"
                         )
+                        stockInputViewModel.increaseStock(catalog, selectedChip.value, quantity.toIntOrNull() ?: 0)
                         navController.navigate(Screen.Stock.route)
                     },
                     modifier = Modifier

@@ -1,6 +1,7 @@
 package com.bielcode.stockmobile.ui.screens.utility.barcodescanner
 
 import android.net.Uri
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bielcode.stockmobile.data.model.Stock
@@ -10,7 +11,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-class StockInputViewModel(private val repository: Repository) : ViewModel() {
+class CheckTransactionStockInputViewModel(private val repository: Repository) : ViewModel() {
     private val _productDetails = MutableStateFlow<Stock?>(null)
     val productDetails: StateFlow<Stock?> = _productDetails
 
@@ -27,21 +28,26 @@ class StockInputViewModel(private val repository: Repository) : ViewModel() {
             details?.productPhotoUrl?.let { photoUrl ->
                 _imageUrl.value = repository.getImageUrl(photoUrl)
             }
+            Log.d("CheckTransactionStockInputVM", "Fetched product details: $details")
         }
     }
 
-    fun saveTransaction(transactionItems: Map<String, TransactionItem>, destination: String, type: String) {
+    fun updateTransactionItem(
+        catalog: String, size: String, qty: Int, transactionCode: String
+    ) {
         viewModelScope.launch {
             _isSaving.value = true
-            repository.saveTransactionInput(transactionItems, destination, type)
+            val transaction = repository.getTransaction(transactionCode)
+            transaction?.let {
+                val updatedItems = it.transactionItems.toMutableMap()
+                val updatedItem = updatedItems[catalog]?.copy(itemQty = qty, isChecked = true)
+                if (updatedItem != null) {
+                    updatedItems[catalog] = updatedItem
+                }
+                val updatedTransaction = it.copy(transactionItems = updatedItems)
+                repository.updateTransaction(transactionCode, updatedTransaction)
+            }
             _isSaving.value = false
         }
     }
-
-    fun increaseStock(catalog: String, size: String, quantity: Int) {
-        viewModelScope.launch {
-            repository.increaseStock(catalog, size, quantity)
-        }
-    }
-
 }

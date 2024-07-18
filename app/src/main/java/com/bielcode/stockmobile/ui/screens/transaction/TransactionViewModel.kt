@@ -45,10 +45,10 @@ class TransactionViewModel(private val repository: Repository): ViewModel() {
     }
 
     fun getStatus(transaction: Transaction): String {
-        return if (transaction.transactionItems.values.all { it.isChecked }) {
-            "Sudah Diantar"
-        } else {
+        return if (transaction.transactionDocumentationUrl == "") {
             "Siap Diantar"
+        } else {
+            "Sudah Diantar"
         }
     }
 }
