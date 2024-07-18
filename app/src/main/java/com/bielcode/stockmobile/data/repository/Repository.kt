@@ -501,6 +501,7 @@ class Repository private constructor(
         )
     }
 
+
     suspend fun getTransactionByCode(transactionCode: String): Transaction? {
         val snapshot = firestore.collection("transactions")
             .whereEqualTo("transactionCode", transactionCode)
@@ -577,7 +578,30 @@ class Repository private constructor(
         }
     }
 
+    suspend fun updateTransaction(transactionCode: String, transaction: Transaction) {
+        try {
+            firestore.collection("transactions")
+                .document(transactionCode)
+                .set(transaction.toMap())
+                .await()
+            Log.d("Repository", "Transaction updated successfully: $transactionCode")
+        } catch (e: Exception) {
+            Log.e("Repository", "Error updating transaction: $transactionCode", e)
+        }
+    }
 
+    suspend fun getTransaction(transactionCode: String): Transaction? {
+        return try {
+            val document = firestore.collection("transactions")
+                .document(transactionCode)
+                .get()
+                .await()
+            document.toTransaction()
+        } catch (e: Exception) {
+            Log.e("Repository", "Error fetching transaction: $transactionCode", e)
+            null
+        }
+    }
 
 
     companion object {

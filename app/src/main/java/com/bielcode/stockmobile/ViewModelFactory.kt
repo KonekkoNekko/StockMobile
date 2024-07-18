@@ -20,6 +20,7 @@ import com.bielcode.stockmobile.ui.screens.transaction.TransactionViewModel
 import com.bielcode.stockmobile.ui.screens.transaction.gudang.TransactionDeliveryConfirm.TransactionDeliveryConfirmViewModel
 import com.bielcode.stockmobile.ui.screens.transaction.marketing.searchaddproduct.SearchAddProductViewModel
 import com.bielcode.stockmobile.ui.screens.transaction.marketing.transactionentry.TransactionEntryViewModel
+import com.bielcode.stockmobile.ui.screens.utility.barcodescanner.CheckTransactionStockInputViewModel
 import com.bielcode.stockmobile.ui.screens.utility.barcodescanner.ScannerViewModel
 import com.bielcode.stockmobile.ui.screens.utility.barcodescanner.StockInputViewModel
 import com.bielcode.stockmobile.ui.screens.utility.barcodescanner.TransactionStockInputViewModel
@@ -103,6 +104,9 @@ class ViewModelFactory(private val repository: Repository) : ViewModelProvider.N
             }
             modelClass.isAssignableFrom(DocumentScannerViewModel::class.java) -> {
                 DocumentScannerViewModel(repository) as T
+            }
+            modelClass.isAssignableFrom(CheckTransactionStockInputViewModel::class.java) -> {
+                CheckTransactionStockInputViewModel(repository) as T
             }
             else -> throw IllegalArgumentException("Unknown ViewModel class: " + modelClass.name)
         }

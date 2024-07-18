@@ -28,6 +28,7 @@ import com.bielcode.stockmobile.ui.screens.transaction.transactiondetail.Transac
 import com.bielcode.stockmobile.ui.screens.transaction.marketing.searchaddproduct.SearchAddProductScreen
 import com.bielcode.stockmobile.ui.screens.transaction.marketing.transactionentry.TransactionEntryScreen
 import com.bielcode.stockmobile.ui.screens.utility.barcodescanner.BarcodeScannerScreen
+import com.bielcode.stockmobile.ui.screens.utility.barcodescanner.CheckTransactionStockInputScreen
 import com.bielcode.stockmobile.ui.screens.utility.barcodescanner.StockInputScreen
 import com.bielcode.stockmobile.ui.screens.utility.barcodescanner.TransactionStockInputScreen
 import com.bielcode.stockmobile.ui.screens.utility.camera.CameraScreen
@@ -87,9 +88,51 @@ fun UserNavigation(
                     navController = navController
                 )
             }
-            composable("barcodeScanner") {
-                BarcodeScannerScreen(navController)
+            composable("barcodeScanner/{catalog}",
+                arguments = listOf(
+                    navArgument("catalog"){ type = NavType.StringType }
+                )
+            ) {backStackEntry ->
+                val catalog = backStackEntry.arguments?.getString("catalog") ?: ""
+                BarcodeScannerScreen(navController, catalog, "", 0, "")
             }
+            composable(
+                "barcodeScanner/{catalog}/{itemSize}/{itemQty}/{transactionCode}",
+                arguments = listOf(
+                    navArgument("catalog") { type = NavType.StringType },
+                    navArgument("itemSize") { type = NavType.StringType },
+                    navArgument("itemQty") { type = NavType.IntType },
+                    navArgument("transactionCode") { type = NavType.StringType }
+                )
+            ) { backStackEntry ->
+                val catalog = backStackEntry.arguments?.getString("catalog") ?: ""
+                val itemSize = backStackEntry.arguments?.getString("itemSize") ?: ""
+                val itemQty = backStackEntry.arguments?.getInt("itemQty") ?: 0
+                val transactionCode = backStackEntry.arguments?.getString("transactionCode") ?: ""
+                BarcodeScannerScreen(navController, catalog, itemSize, itemQty, transactionCode)
+            }
+            composable(
+                "checkTransactionStockInput/{catalog}/{initSize}/{supposedQty}/{transactionCode}",
+                arguments = listOf(
+                    navArgument("catalog") { type = NavType.StringType },
+                    navArgument("initSize") { type = NavType.StringType },
+                    navArgument("supposedQty") { type = NavType.IntType },
+                    navArgument("transactionCode") { type = NavType.StringType }
+                )
+            ) { backStackEntry ->
+                val catalog = backStackEntry.arguments?.getString("catalog") ?: ""
+                val initSize = backStackEntry.arguments?.getString("initSize") ?: ""
+                val supposedQty = backStackEntry.arguments?.getInt("supposedQty") ?: 0
+                val transactionCode = backStackEntry.arguments?.getString("transactionCode") ?: ""
+                CheckTransactionStockInputScreen(
+                    catalog = catalog,
+                    initSize = initSize,
+                    supposedQty = supposedQty,
+                    transactionCode = transactionCode,
+                    navController = navController
+                )
+            }
+
             composable(
                 "stockInput/{catalog}/{initSize}",
                 arguments = listOf(

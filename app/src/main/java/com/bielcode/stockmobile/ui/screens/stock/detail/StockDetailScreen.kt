@@ -74,7 +74,7 @@ fun StockDetailScreen(
             floatingActionButton = {
                 if (correctRole) {
                     FloatingActionButton(onClick = {
-                        navController.navigate("barcodeScanner")
+                        navController.navigate("barcodeScanner/${productDetails?.productCatalog}")
                     }) {
                         Icon(imageVector = Icons.Default.Input, contentDescription = "Stock Input")
                     }

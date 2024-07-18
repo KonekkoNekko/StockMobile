@@ -1,4 +1,6 @@
-@file:OptIn(ExperimentalLayoutApi::class, ExperimentalLayoutApi::class)
+@file:OptIn(ExperimentalLayoutApi::class, ExperimentalLayoutApi::class,
+    ExperimentalLayoutApi::class
+)
 
 package com.bielcode.stockmobile.ui.screens.utility.barcodescanner
 
@@ -231,19 +233,20 @@ fun TransactionStockInputScreen(
     val productDetails by viewModel.productDetails.collectAsState()
     val isSaving by viewModel.isSaving.collectAsState()
     val imageUrl by viewModel.imageUrl.collectAsState()
-    val productMaxQty: Int = productDetails?.productDetails?.get(initSize)?.stockCurrent ?: 0
+
 
     val quantity = remember { mutableStateOf("") }
-    val isQtyValid = quantity.value.toIntOrNull()?.let { it <= productMaxQty } ?: false
-    val submitQty = if (isQtyValid) quantity.value.toInt() else 0
+
 
     LaunchedEffect(catalog) {
         viewModel.fetchProductDetails(catalog)
     }
 
     val initialChip = remember { mutableStateOf(initSize) }
-
+    val productMaxQty: Int = productDetails?.productDetails?.get(initialChip.value)?.stockCurrent ?: 0
     val formattedPrice = productDetails?.productPrice?.let { formatPriceWithDots(it) } ?: ""
+    val isQtyValid = quantity.value.toIntOrNull()?.let { it <= productMaxQty } ?: false
+    val submitQty = if (isQtyValid) quantity.value.toInt() else 0
 
     Scaffold(
         topBar = {
@@ -305,7 +308,7 @@ fun TransactionStockInputScreen(
                             FilterChip(
                                 selected = initialChip.value == size,
                                 onClick = { initialChip.value = size },
-                                label = { Text(text = size) }
+                                label = { Text(text = size) },
                             )
                         }
                     }
@@ -380,48 +383,63 @@ fun TransactionStockInputScreen(
 @Composable
 fun CheckTransactionStockInputScreen(
     catalog: String,
-    name: String,
-    price: Int,
-    productQuantities: List<ProductQtyDetail>,
     initSize: String,
     supposedQty: Int,
+    transactionCode: String,
+    navController: NavHostController
 ) {
-    val initialChip =
-        productQuantities.find { it.size == initSize }?.size ?: productQuantities.first().size
-    val selectedChip = remember {
-        mutableStateOf(initialChip)
+    val context = LocalContext.current
+    val viewModel: CheckTransactionStockInputViewModel = viewModel(factory = ViewModelFactory(Injection.provideRepository(context)))
+    val productDetails by viewModel.productDetails.collectAsState()
+    val isSaving by viewModel.isSaving.collectAsState()
+    val imageUrl by viewModel.imageUrl.collectAsState()
+
+    LaunchedEffect(catalog) {
+        viewModel.fetchProductDetails(catalog)
     }
-    val formattedPrice = price?.let { formatPriceWithDots(it) } ?: ""
 
+    val initialChip = remember {
+        mutableStateOf(initSize)
+    }
 
+    val formattedPrice = productDetails?.productPrice?.let { formatPriceWithDots(it) } ?: ""
+    val quantity = remember { mutableStateOf("") }
+    val isQtyValid = quantity.value.toIntOrNull()?.let { it <= supposedQty } ?: false
+    val submitQty = if (isQtyValid) quantity.value.toInt() else 0
 
     Scaffold(topBar = {
         CenterAlignedTopAppBar(title = {
             Text(text = "Tambah Bawaan", style = MaterialTheme.typography.titleMedium)
         }, navigationIcon = {
-            IconButton(onClick = {}) {
+            IconButton(onClick = { navController.navigateUp() }) {
                 Icon(
                     imageVector = Icons.Default.ArrowBack,
                     contentDescription = "BackArrow",
                 )
             }
-        }
-        )
+        })
     }) {
         Column(
             modifier = Modifier
                 .padding(it)
-                .verticalScroll(
-                    rememberScrollState()
-                )
+                .verticalScroll(rememberScrollState())
         ) {
-            Image(
+            imageUrl?.let { uri ->
+                Image(
+                    painter = rememberImagePainter(uri),
+                    contentDescription = "Product Image",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(330.dp),
+                    contentScale = ContentScale.Crop
+                )
+            } ?: Image(
                 painter = painterResource(id = R.drawable.welcome),
                 contentDescription = "",
-                contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(330.dp)
+                    .height(330.dp),
+                contentScale = ContentScale.Crop
             )
             Column(
                 modifier = Modifier
@@ -431,7 +449,7 @@ fun CheckTransactionStockInputScreen(
             ) {
                 Column {
                     Text(text = catalog, style = MaterialTheme.typography.titleMedium)
-                    Text(text = name, style = MaterialTheme.typography.headlineLarge)
+                    Text(text = productDetails?.productName ?: "", style = MaterialTheme.typography.headlineLarge)
                     Text(
                         text = "Rp. $formattedPrice",
                         style = MaterialTheme.typography.titleLarge
@@ -447,16 +465,15 @@ fun CheckTransactionStockInputScreen(
                             .fillMaxSize(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.Start)
                     ) {
-                        productQuantities.forEach { item ->
-                            FilterChip(
-                                selected = selectedChip.value == item.size,
-                                onClick = {
-                                    selectedChip.value = item.size
-                                },
-                                label = {
-                                    Text(text = item.size)
-                                }
-                            )
+                        productDetails?.productDetails?.forEach { item ->
+                            productDetails?.productDetails?.forEach { (size, _) ->
+                                FilterChip(
+                                    selected = initialChip.value == size,
+                                    onClick = { initialChip.value = size },
+                                    label = { Text(text = size) },
+                                    enabled = false
+                                )
+                            }
                         }
                     }
                 }
@@ -465,11 +482,17 @@ fun CheckTransactionStockInputScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     TextField(
-                        value = "",
-                        onValueChange = {},
+                        value = quantity.value,
+                        onValueChange = { quantity.value = it },
                         placeholder = { Text(text = "Masukkan Kuantitas yang Akan Dikirim") },
                         label = { Text(text = "Kuantitas Bawaan") },
                         modifier = Modifier.weight(3f),
+                        supportingText = {
+                            if (!isQtyValid) {
+                                Text(text = "Pastikan tidak melebihi stok kirim!", color = Color.Red)
+                            }
+                        },
+                        isError = !isQtyValid
                     )
                     Text(
                         text = "/ $supposedQty",
@@ -479,7 +502,14 @@ fun CheckTransactionStockInputScreen(
                     )
                 }
                 Button(
-                    onClick = {},
+                    onClick = {
+                        if (isQtyValid) {
+                            viewModel.updateTransactionItem(
+                                catalog, initSize, submitQty, transactionCode
+                            )
+                            navController.navigate("transactionDetailDelivery/$transactionCode")
+                        }
+                    },
                     modifier = Modifier
                         .fillMaxWidth(0.8f)
                         .align(Alignment.CenterHorizontally),
@@ -489,19 +519,4 @@ fun CheckTransactionStockInputScreen(
             }
         }
     }
-}
-
-@Preview(showSystemUi = true)
-@Composable
-fun PreviewCheckTransactionInputBarcodeScreen() {
-    CheckTransactionStockInputScreen(
-        catalog = "52016",
-        name = "Post OP Knee Brace Right",
-        price = 1760000,
-        productQuantities = listOf(
-            ProductQtyDetail("Universal", 30, 15, 60, 2)
-        ),
-        initSize = "Universal",
-        supposedQty = 30
-    )
 }
